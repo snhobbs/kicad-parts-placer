@@ -17,6 +17,13 @@
 + Can follow same workflow as making a tester or copy from the existing board that uses the tester
 + Script should have a check placement function that is read only
 
+## Matching Form Factor
++ Ensure position, type, & rotation match a certain description. 
++ The grouped components then only need 2 dimensions locked to a reference to get correct. 
+
+## Critical component placement
++ Exact placement of mounting holes, sensors, connectors, etc
+
 ## Notes
  
 + Place parts in pcb layout from a configuration table. 
