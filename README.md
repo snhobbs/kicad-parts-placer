@@ -35,3 +35,12 @@
 + Pull parts data to dataframe, check data matches
 + Update part positions from dataframe (schematic to pcb position example)
 + Group components
+
+
+## References
++ Openscad test jig generator: https://tinylabs.io/openfixture-config/
++ Manual kicad location extraction: https://tinylabs.io/openfixture-kicad-export/
++ Hackaday test jigs: https://hackaday.com/2016/08/24/tools-of-the-trade-test-and-programming/#more-218337
++ https://www.testjigfactory.com/
++ https://climbers.net/sbc/home-lab-pcb-programming-test-jig/
++ Kicad schematic to pcb position: https://github.com/ian-ross/kicad-plugins
