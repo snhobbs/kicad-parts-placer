@@ -26,6 +26,7 @@
 + All parts are grouped together, locking their relative placement
 + Internal configuration is a dataframe with ref des, label/value, footprint, position x, position y. Notes fields can be added for documentation generation. 
 + A separate config object can be that could pull in a board outline, stackup, etc describing the board. 
++ Position, rotation, & ref des are available in the centroid file, that avoids requiring the source board be kicad. 
 
 
 ## Requirements
