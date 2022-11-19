@@ -62,6 +62,21 @@ kicad-parts-placer --pcb example-placement.kicad_pcb --config centroid-all-pos.c
 + Position, rotation, & ref des are available in the centroid file, that avoids requiring the source board be kicad. 
 
 
+## Installation
+### PyPi
+All you need to run is:
+```
+pip install kicad-parts-placer
+```
+
+### Source
+To install from source:
+```
+git clone https://github.com/snhobbs/kicad-parts-placer
+cd kicad-parts-placer
+pip install .
+```
+
 ## References
 + Openscad test jig generator: https://tinylabs.io/openfixture-config/
 + Manual kicad location extraction: https://tinylabs.io/openfixture-kicad-export/

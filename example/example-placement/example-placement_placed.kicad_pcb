@@ -1294,7 +1294,7 @@
       fcf53729-e041-4e4a-b2d2-e2756a042d1f
     )
   )
-  (group "MWIRDetector-all-pos" (id 8aa893ee-be4d-4fd6-88a0-06f10e06b85f)
+  (group "centroid-all-pos" (id 789b03d0-2ca4-4aa3-84ff-03daaa469d31)
     (members
       02a8b1f9-1eae-4781-8cab-a76c7a9c54ef
       19da9b74-6268-4521-9bad-a61b259a4a5d
