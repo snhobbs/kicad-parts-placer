@@ -1,0 +1,4 @@
+pandas
+numpy
+spreadsheet_wrangler
+click
