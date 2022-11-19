@@ -21,4 +21,13 @@ date:11/18/2022
 + Run script on PCB, currently command line only
 + If no x,y offset is passed in then the parts are centered on the board outline
 + All parts are grouped when added, future version could add different groups, the script could also be run multiple times if the group name is changed to be none global
-+ 
+
+
+## Requirements
++ Read spreadsheet to dataframe (use spreadsheet-wrangler)
++ Export filtered ref des to dataframe (pcbnew wrangling)
++ Dataframe to spreadsheet (pandas)
++ Pull parts data to dataframe, check data matches
++ Update part positions from dataframe (schematic to pcb position example)
++ Group components
+
