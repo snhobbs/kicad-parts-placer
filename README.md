@@ -1,5 +1,7 @@
 # kicad-parts-placer
 
+<https://maskset.net/kicad-parts-placer.html>
+
 + Exact batch placement of components in a layout
 + Groups the components allowing them to be moved and positioned as a group, easily ensuring exact alignment
 + Useful for:
