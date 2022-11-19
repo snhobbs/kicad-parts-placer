@@ -1,0 +1,20 @@
+"ref des","value","Package","x","y","rotation","side","show ref des","show value"
+"TP1","VINF","TestPoint_Pad_2.0x2.0mm",-4.25,14.75,180,"bottom",0,1
+"TP2","+13","TestPoint_Pad_2.0x2.0mm",-19,18,180,"bottom",0,1
+"TP3","+5","TestPoint_Pad_2.0x2.0mm",-33.25,20.5,180,"bottom",0,1
+"TP4","GND","TestPoint_Pad_2.0x2.0mm",-21.3,3.3,180,"bottom",0,1
+"TP5","+3.3D","TestPoint_Pad_2.0x2.0mm",-40.25,31.75,0,"bottom",0,1
+"TP6","RX+","TestPoint_Pad_2.0x2.0mm",-33.3,3.3,180,"bottom",0,1
+"TP7","RX-","TestPoint_Pad_2.0x2.0mm",-36.3,3.3,180,"bottom",0,1
+"TP8","TX+","TestPoint_Pad_2.0x2.0mm",-39.3,3.3,180,"bottom",0,1
+"TP9","TX-","TestPoint_Pad_2.0x2.0mm",-42.3,3.3,180,"bottom",0,1
+"TP10","MW0","TestPoint_Pad_2.0x2.0mm",-22.5,52.25,180,"bottom",0,1
+"TP11","MW1","TestPoint_Pad_2.0x2.0mm",-34.25,50.5,180,"bottom",0,1
+"TP12","AOUT0","TestPoint_Pad_2.0x2.0mm",-27.3,3.3,180,"bottom",0,1
+"TP13","AOUT1","TestPoint_Pad_2.0x2.0mm",-30.3,3.3,180,"bottom",0,1
+"TP14","+VIn","TestPoint_Pad_2.0x2.0mm",-24.3,3.3,180,"bottom",0,1
+"H1","#6","MountingHole_3.7mm_Pad_Via",-48,0,0,"bottom",0,0
+"H2","#6","MountingHole_3.7mm_Pad_Via",0,78,0,"bottom",0,0
+"H3","#6","MountingHole_3.7mm_Pad_Via",0,0,0,"bottom",0,0
+"H4","#6","MountingHole_3.7mm_Pad_Via",-48,78,0,"bottom",0,0
+"J1","Ribbon","PinHeader_2x10_P2.54mm_Vertical_SMD",-24,70,90,"bottom",1,0
