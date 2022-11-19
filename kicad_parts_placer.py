@@ -12,6 +12,7 @@ import spreadsheet_wrangler
 import numpy as np
 
 
+
 # the internal coorinate space of pcbnew is 1E-6 mm. (a millionth of a mm)
 # the coordinate 121550000 corresponds to 121.550000
 SCALE = 1/1e-6
@@ -55,11 +56,12 @@ def move_modules(components: pandas.DataFrame, board: pcbnew.BOARD) -> pcbnew.BO
         center = module.GetCenter()  #  pdbnew.wxPoint
         new_pos = pcbnew.wxPoint(component['x'], component['y'])
         logging.info(f"{ref_des}: Move from {center} to {new_pos}, {component['x'], component['y']}")
+        module.SetOrientationDegrees(component['rotation'])
 
-        rotation_multiple=10  #  divides by 10?
-        module.Rotate(module.GetCenter(), component['rotation']*rotation_multiple)
+        #module.Rotate(module.GetCenter(), component['rotation']*10)
         logging.info(f"{ref_des}: rotate {component['rotation']} about {new_pos}")
-        module.SetPosition(new_pos)
+        module.SetPosition(pcbnew.VECTOR2I(new_pos))
+
     return board
 
 

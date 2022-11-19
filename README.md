@@ -1,5 +1,7 @@
 # kicad-parts-placer
 
+<https://maskset.net/kicad-parts-placer.html>
+
 + Exact batch placement of components in a layout
 + Groups the components allowing them to be moved and positioned as a group, easily ensuring exact alignment
 + Useful for:
@@ -21,7 +23,7 @@ The schematic is exported to a PCB which will look like this:
 
 ![Exported PCB](documents/exported_board.png)
 
-Running the script on this board with this command exports the following board with the components exactly alligned ready for layout. The group can be treated as a footprint, placed whereever is useful. During layout you only have to deal with a single coordinate as the position within the group is locked.
+Running the script on this board with this command exports the following board with the components exactly aligned ready for layout. The group can be treated as a footprint, placed where ever is useful. During layout you only have to deal with a single coordinate as the position within the group is locked.
 
 ```{python}
 kicad-parts-placer --pcb example-placement.kicad_pcb --config centroid-all-pos.csv --out example-placement_placed.kicad_pcb -x 117.5 -y 53
@@ -62,6 +64,21 @@ kicad-parts-placer --pcb example-placement.kicad_pcb --config centroid-all-pos.c
 + Position, rotation, & ref des are available in the centroid file, that avoids requiring the source board be kicad. 
 
 
+## Installation
+### PyPi
+All you need to run is:
+```
+pip install kicad-parts-placer
+```
+
+### Source
+To install from source:
+```
+git clone https://github.com/snhobbs/kicad-parts-placer
+cd kicad-parts-placer
+pip install .
+```
+
 ## References
 + Openscad test jig generator: https://tinylabs.io/openfixture-config/
 + Manual kicad location extraction: https://tinylabs.io/openfixture-kicad-export/
@@ -69,3 +86,4 @@ kicad-parts-placer --pcb example-placement.kicad_pcb --config centroid-all-pos.c
 + https://www.testjigfactory.com/
 + https://climbers.net/sbc/home-lab-pcb-programming-test-jig/
 + Kicad schematic to pcb position: https://github.com/ian-ross/kicad-plugins
++ Test pad to openscad pin placement: https://github.com/5inf/TestPointReport2STL
