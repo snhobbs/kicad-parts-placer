@@ -86,3 +86,4 @@ pip install .
 + https://www.testjigfactory.com/
 + https://climbers.net/sbc/home-lab-pcb-programming-test-jig/
 + Kicad schematic to pcb position: https://github.com/ian-ross/kicad-plugins
++ Test pad to openscad pin placement: https://github.com/5inf/TestPointReport2STL
