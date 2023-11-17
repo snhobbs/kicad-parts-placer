@@ -107,10 +107,10 @@ def mirror_components(components: pandas.DataFrame) -> pandas.DataFrame:
 @click.option("-x", type=float, default=0, help="x offset for placement")
 @click.option("-y", type=float, default=0, help="y offset for placement")
 #@click.option("--center-on-board", is_flag=True, help="Center group on board bounding box")
-#@click.option("--mirror", is_flag=True, help="Mirror parts, required for matching up the front and back of two boards")
+@click.option("--flip", is_flag=True, help="Mirror parts, required for matching up the front and back of two boards")
 @click.option("--group", "group_name", type=str, help="name of parts group, defaults to file name")
 @click.option("--debug", is_flag=True, help="")
-def main(pcb, config, out, inplace, x, y, group_name, debug):
+def main(pcb, config, out, inplace, x, y, flip, group_name, debug):
     scale = SCALE
     logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
@@ -131,7 +131,8 @@ def main(pcb, config, out, inplace, x, y, group_name, debug):
 
     #  Scale input to kicad native units
     components["x"] = (components["x"])*scale
-    components["y"] = (components["y"])*scale
+    mult = 1 -2*int(flip)
+    components["y"] = (components["y"])*scale*mult
 
     #if center_on_board:
     #    components = center_component_location_on_bounding_box(components, bounding_box=bounding_box, mirror=mirror)
