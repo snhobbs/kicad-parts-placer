@@ -1,7 +1,7 @@
 CENTROID=centroid-all-pos.csv
 PCBIN=example-placement.kicad_pcb
 PCBOUT=example-placement_placed.kicad_pcb
-COMMAND=python3 ../../kicad_parts_placer.py
+COMMAND=kicad_parts_placer
 
 all: place view
 
