@@ -8,6 +8,7 @@ import logging
 def get_scale():
     return 1/1e-6
 
+
 def group_components(components: pandas.DataFrame, board: pcbnew.BOARD, group: pcbnew.PCB_GROUP):
     for _, component in components.iterrows():
         ref_des = component["ref des"]
@@ -16,11 +17,14 @@ def group_components(components: pandas.DataFrame, board: pcbnew.BOARD, group: p
             group.AddItem(module)
     return components
 
+
 def scale_to_mm(unit):
     return unit/get_scale()
 
+
 def scale_from_mm(mm):
     return mm*get_scale()
+
 
 def move_module(ref_des: str, position: tuple, rotation: float, board: pcbnew.BOARD):
     '''
@@ -41,15 +45,16 @@ def move_module(ref_des: str, position: tuple, rotation: float, board: pcbnew.BO
         logging.debug("%s locked, skip", ref_des)
         return
 
-    center = module.GetCenter()  #  pdbnew.wxPoint
+    center = module.GetCenter()  # pdbnew.wxPoint
     new_pos = pcbnew.wxPoint(position[0], position[1])
     logging.info(f"{ref_des}: Move from {center} to {new_pos}, {position}")
     module.SetOrientationDegrees(rotation)
 
-    #module.Rotate(module.GetCenter(), component['rotation']*10)
+    # module.Rotate(module.GetCenter(), component['rotation']*10)
     logging.info(f"{ref_des}: rotate {rotation} about {new_pos}")
     module.SetPosition(pcbnew.VECTOR2I(*new_pos))
     return board
+
 
 def move_modules(components: pandas.DataFrame, board: pcbnew.BOARD) -> pcbnew.BOARD:
     '''
@@ -99,7 +104,7 @@ def unify_position_reference_to_board_top():
     The top and bottom sides of a centroid are referenced to the same
     '''
 
+
 def mirror_components(components: pandas.DataFrame) -> pandas.DataFrame:
     components['x'] = max(components['x']) - components['x']
     return components
-
