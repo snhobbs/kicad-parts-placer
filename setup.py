@@ -33,7 +33,7 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
     ],
-    description="Python Boilerplate contains all the boilerplate you need to create a Python package.",
+    description="Place components in a kicad file programatically.",
     entry_points={
         'console_scripts': [
             'kicad_parts_placer=kicad_parts_placer.cli:main',
@@ -49,6 +49,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/snhobbs/kicad-parts-placer.git',
-    version='0.1.1',
+    version='0.1.2',
     zip_safe=False,
 )
