@@ -9,7 +9,7 @@ import pcbnew
 import click
 import spreadsheet_wrangler
 import numpy as np
-from .kicad_parts_placer import scale_from_mm, group_components, move_modules
+from .kicad_parts_placer import place_parts  # scale_from_mm, group_components, move_modules
 
 
 @click.command(help="Takes a PCB & configuration data in mm, sets rotation and location on a new pcb")
@@ -40,41 +40,10 @@ def main(pcb, config, out, inplace, x, y, flip, group_name, debug):
     # bounding_box = board.GetBoardEdgesBoundingBox() #  FIXME use this to check placement
 
     components = spreadsheet_wrangler.read_file_to_df(config)
-    components['rotation'] = np.array(components['rotation'], dtype=float)
 
-    #  Scale input to kicad native units
-    #  Scale input to kicad native units
-    components["x"] = scale_from_mm(components["x"])
-    mult = 1 - 2 * int(flip)
-    components["y"] = scale_from_mm(components["y"])*mult
-
-    # if center_on_board:
-    #    components = center_component_location_on_bounding_box(components, bounding_box=bounding_box, mirror=mirror)
-
-    # set offset
-    offset = (scale_from_mm(x), scale_from_mm(y))
-    components["x"] = components["x"] + offset[0]
-    components["y"] = components["y"] + offset[1]
-
-    if min(components["x"]) < 0:
-        components["x"] = components["x"] - min(components["x"])
-
-    if min(components["y"]) < 0:
-        components["y"] = components["y"] - min(components["y"])
-
-    # There are no negative positions on a kicad schematic
-    assert min(components["x"]) >= 0
-    assert min(components["y"]) >= 0
-
-    # group
     if group_name is None:
         group_name = config.split(".")[0]
-    pcb_group = pcbnew.PCB_GROUP(None)
-    pcb_group.SetName(group_name)
-    board.Add(pcb_group)
-    group_components(components, board, pcb_group)
-
-    board = move_modules(components, board)
+    board = place_parts(board=board, components_df=components, group_name=group_name, flip=flip, x=x, y=y)
     board.Save(out)
 
 

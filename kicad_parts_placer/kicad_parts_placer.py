@@ -1,6 +1,7 @@
 import pcbnew
 import pandas
 import logging
+import numpy as np
 
 
 # the internal coorinate space of pcbnew is 1E-6 mm. (a millionth of a mm)
@@ -108,3 +109,46 @@ def unify_position_reference_to_board_top():
 def mirror_components(components: pandas.DataFrame) -> pandas.DataFrame:
     components['x'] = max(components['x']) - components['x']
     return components
+
+
+def place_parts(board: pcbnew.BOARD, components_df: pandas.DataFrame, group_name: str = None, flip: bool = False, x: float = 0, y: float = 0):
+    '''
+    :param: pcbnew.BOARD board:
+    :param: str group_name:
+    :param: bool flip: reflect parts over y axis
+    :param: float x: offset for placement
+    :param: float y: offset for placement
+    '''
+    components_df['rotation'] = np.array(components_df['rotation'], dtype=float)
+
+    #  Scale input to kicad native units
+    #  Scale input to kicad native units
+    components_df["x"] = scale_from_mm(components_df["x"])
+    mult = 1 - 2 * int(flip)
+    components_df["y"] = scale_from_mm(components_df["y"])*mult
+
+    # set offset
+    offset = (scale_from_mm(x), scale_from_mm(y))
+    components_df["x"] = components_df["x"] + offset[0]
+    components_df["y"] = components_df["y"] + offset[1]
+
+    if min(components_df["x"]) < 0:
+        components_df["x"] = components_df["x"] - min(components_df["x"])
+
+    if min(components_df["y"]) < 0:
+        components_df["y"] = components_df["y"] - min(components_df["y"])
+
+    # There are no negative positions on a kicad schematic
+    assert min(components_df["x"]) >= 0
+    assert min(components_df["y"]) >= 0
+
+    # group
+    if group_name is None:
+        group_name = ""  # FIXME name the groups by group_{{INT}}
+    pcb_group = pcbnew.PCB_GROUP(None)
+    pcb_group.SetName(group_name)
+    board.Add(pcb_group)
+    group_components(components_df, board, pcb_group)
+
+    board = move_modules(components_df, board)
+    return board
