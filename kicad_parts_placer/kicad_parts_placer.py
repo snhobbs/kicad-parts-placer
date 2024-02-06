@@ -27,6 +27,31 @@ def scale_from_mm(mm):
     return mm*get_scale()
 
 
+def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front"):
+    '''
+    Move and rotate a part on a board
+    :param str ref_def: Reference Designator of part
+    :param pcbnew.BOARD board: Target board
+    :param bool side: front, back, current
+    '''
+    module = board.FindFootprintByReference(ref_des)
+    if module is None:
+        logging.warning("%s not found", ref_des)
+        return
+
+    logging.debug("%s found", ref_des)
+
+    if module.IsLocked():
+        logging.debug("%s locked, skip", ref_des)
+        return
+
+    # Set the correct side of the part, reflected over the y axis, correct the rotation later
+    if (side.lower() == "front" and module.GetLayerName() != 'F.Cu') or (side.lower() == "back" and module.GetLayerName() == 'F.Cu'):
+        module.Flip(module.GetCenter(), aFlipLeftRight=True)
+
+    return board
+
+
 def move_module(ref_des: str, position: tuple, rotation: float, board: pcbnew.BOARD):
     '''
     Move and rotate a part on a board
@@ -49,11 +74,12 @@ def move_module(ref_des: str, position: tuple, rotation: float, board: pcbnew.BO
     center = module.GetCenter()  # pdbnew.wxPoint
     new_pos = pcbnew.wxPoint(position[0], position[1])
     logging.info(f"{ref_des}: Move from {center} to {new_pos}, {position}")
+
     module.SetOrientationDegrees(rotation)
+    module.SetPosition(pcbnew.VECTOR2I(*new_pos))
 
     # module.Rotate(module.GetCenter(), component['rotation']*10)
     logging.info(f"{ref_des}: rotate {rotation} about {new_pos}")
-    module.SetPosition(pcbnew.VECTOR2I(*new_pos))
     return board
 
 
@@ -69,10 +95,18 @@ def move_modules(components: pandas.DataFrame, board: pcbnew.BOARD) -> pcbnew.BO
     Update the parts position to the schematics plus the offset
     Update the label to with a configuration table passed to a function
     '''
+
     for _, component in components.iterrows():
         ref_des = component["ref des"]
         position = (component['x'], component['y'])
         move_module(ref_des, position, component['rotation'], board)
+    return board
+
+
+def flip_modules(components: pandas.DataFrame, board: pcbnew.BOARD) -> pcbnew.BOARD:
+    for _, component in components.iterrows():
+        ref_des = component["ref des"]
+        flip_module(ref_des, side=component['side'], board=board)
     return board
 
 
@@ -111,11 +145,11 @@ def mirror_components(components: pandas.DataFrame) -> pandas.DataFrame:
     return components
 
 
-def place_parts(board: pcbnew.BOARD, components_df: pandas.DataFrame, group_name: str = None, flip: bool = False, x: float = 0, y: float = 0):
+def place_parts(board: pcbnew.BOARD, components_df: pandas.DataFrame, group_name: str = None, mirror: bool = False, x: float = 0, y: float = 0):
     '''
     :param: pcbnew.BOARD board:
     :param: str group_name:
-    :param: bool flip: reflect parts over y axis
+    :param: bool mirror: reflect parts over y axis
     :param: float x: offset for placement
     :param: float y: offset for placement
     '''
@@ -124,7 +158,7 @@ def place_parts(board: pcbnew.BOARD, components_df: pandas.DataFrame, group_name
     #  Scale input to kicad native units
     #  Scale input to kicad native units
     components_df["x"] = scale_from_mm(components_df["x"])
-    mult = 1 - 2 * int(flip)
+    mult = 1 - 2 * int(mirror)
     components_df["y"] = scale_from_mm(components_df["y"])*mult
 
     # set offset
@@ -142,6 +176,23 @@ def place_parts(board: pcbnew.BOARD, components_df: pandas.DataFrame, group_name
     assert min(components_df["x"]) >= 0
     assert min(components_df["y"]) >= 0
 
+    # add a default that won't change the side of the parts
+    if "side" not in components_df.columns:
+        components_df["side"] = "current"
+
+    pseudonyms = {"front": ["front", "top", "f.cu"],
+                  "back" : ["back", "bottom", "b.cu"]}
+    pseudonyms_lookup = {}
+
+    sides = []
+    for pt in components_df["side"]:
+        if pt.lower() in pseudonyms["front"]:
+            sides.append("front")
+        elif pt.lower() in pseudonyms["back"]:
+            sides.append("back")
+        else:
+            sides.append("current")
+
     # group
     if group_name is None:
         group_name = ""  # FIXME name the groups by group_{{INT}}
@@ -150,5 +201,6 @@ def place_parts(board: pcbnew.BOARD, components_df: pandas.DataFrame, group_name
     board.Add(pcb_group)
     group_components(components_df, board, pcb_group)
 
+    board = flip_modules(components_df, board)
     board = move_modules(components_df, board)
     return board
