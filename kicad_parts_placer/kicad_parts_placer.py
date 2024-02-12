@@ -153,6 +153,10 @@ def place_parts(board: pcbnew.BOARD, components_df: pandas.DataFrame, group_name
     :param: float x: offset for placement
     :param: float y: offset for placement
     '''
+    # Short circuit exit if there's no components, this allows an improperly formated dataframe to be entered if it's empty
+    if len(components_df) == 0:
+        return board
+
     components_df['rotation'] = np.array(components_df['rotation'], dtype=float)
 
     #  Scale input to kicad native units
