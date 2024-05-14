@@ -17,7 +17,6 @@ classifiers=[
 description="Place components in a kicad file programmatically."
 keywords=['kicad_parts_placer', 'kicad', 'python', 'eda', 'electronics', 'pcb', 'manufacturing']
 readme="README.md"
-license="MIT license"
 
 dependencies = [
     'click>=7.0',
@@ -25,6 +24,10 @@ dependencies = [
     'numpy',
     'spreadsheet_wrangler>=0.1.3'
 ]
+
+[project.license]
+file="LICENSE"
+name="MIT license"
 
 [project.scripts]
 kicad_parts_placer='kicad_parts_placer.cli:main'
