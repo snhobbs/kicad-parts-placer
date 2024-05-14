@@ -36,7 +36,7 @@ kicad-parts-placer --pcb example-placement.kicad_pcb --config centroid-all-pos.c
 ### Procedure: Existing board needs a tester
 1. Export test pad locations & type to a spreadsheet
 2. Plugin exports pad type, position, ref des, & value from DUT
-3. Extend the exported data, choosing the pogo pin footprint, mounting holes, connectors, etc. This is useful for the placement of mechanically important parts and form factor compliance. 
+3. Extend the exported data, choosing the pogo pin footprint, mounting holes, connectors, etc. This is useful for the placement of mechanically important parts and form factor compliance.
 4. Batch load parts into schematic
 5. Complete schematic as needed, batch loading can be repeated or bom exported & checked for consistency
 6. Update PCB from schematic (f8)
@@ -47,21 +47,21 @@ kicad-parts-placer --pcb example-placement.kicad_pcb --config centroid-all-pos.c
 + Script should have a check placement function that is read only
 
 ## Matching Form Factor
-+ Ensure position, type, & rotation match a certain description. 
-+ The grouped components then only need 2 dimensions locked to a reference to get correct. 
++ Ensure position, type, & rotation match a certain description.
++ The grouped components then only need 2 dimensions locked to a reference to get correct.
 
 ## Critical component placement
 + Exact placement of mounting holes, sensors, connectors, etc
 
 ## Notes
-+ Place parts in pcb layout from a configuration table. 
++ Place parts in pcb layout from a configuration table.
 + Allows writing a config script which fully defines the parts
 + Connections are made either by updating from a schematic or passing a netlist
 + Use example of schematic to pcb placement
 + All parts are grouped together, locking their relative placement
-+ Internal configuration is a dataframe with ref des, label/value, footprint, position x, position y. Notes fields can be added for documentation generation. 
-+ A separate config object can be that could pull in a board outline, stackup, etc describing the board. 
-+ Position, rotation, & ref des are available in the centroid file, that avoids requiring the source board be kicad. 
++ Internal configuration is a dataframe with ref des, label/value, footprint, position x, position y. Notes fields can be added for documentation generation.
++ A separate config object can be that could pull in a board outline, stackup, etc describing the board.
++ Position, rotation, & ref des are available in the centroid file, that avoids requiring the source board be kicad.
 
 
 ## Installation

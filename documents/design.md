@@ -30,4 +30,3 @@ date:11/18/2022
 + Pull parts data to dataframe, check data matches
 + Update part positions from dataframe (schematic to pcb position example)
 + Group components
-
