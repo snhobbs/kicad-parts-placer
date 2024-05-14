@@ -78,13 +78,15 @@ def move_module(ref_des: str, position: tuple, rotation: float, board: pcbnew.BO
 
     center = module.GetCenter()  # pdbnew.wxPoint
     new_pos = pcbnew.wxPoint(position[0], position[1])
-    logging.info(f"{ref_des}: Move from {center} to {new_pos}, {position}")
+    msg = f"{ref_des}: Move from {center} to {new_pos}, {position}"
+    logging.info(msg)
 
     module.SetOrientationDegrees(rotation)
     module.SetPosition(pcbnew.VECTOR2I(*new_pos))
 
     # module.Rotate(module.GetCenter(), component['rotation']*10)
-    logging.info(f"{ref_des}: rotate {rotation} about {new_pos}")
+    msg = f"{ref_des}: rotate {rotation} about {new_pos}"
+    logging.info(msg)
     return board
 
 
@@ -157,7 +159,7 @@ def mirror_components(components: pd.DataFrame) -> pd.DataFrame:
 def place_parts(
     board: pcbnew.BOARD,
     components_df: pd.DataFrame,
-    group_name: str = None,
+    group_name: str | None = None,
     mirror: bool = False,
     x: float = 0,
     y: float = 0,
@@ -201,7 +203,6 @@ def place_parts(
         components_df["side"] = "current"
 
     pseudonyms = {"front": ["front", "top", "f.cu"], "back": ["back", "bottom", "b.cu"]}
-    pseudonyms_lookup = {}
 
     sides = []
     for pt in components_df["side"]:
@@ -221,5 +222,4 @@ def place_parts(
     group_components(components_df, board, pcb_group)
 
     board = flip_modules(components_df, board)
-    board = move_modules(components_df, board)
-    return board
+    return move_modules(components_df, board)

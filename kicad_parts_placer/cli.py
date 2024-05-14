@@ -48,9 +48,8 @@ def main(pcb, config, out, inplace, x, y, flip, group_name, debug):
     if inplace:
         out = pcb
     elif out is None:
-        raise ValueError(
-            "Either the inplace flag needs to be set or the --out option set"
-        )
+        msg = "Either the inplace flag needs to be set or the --out option set"
+        raise ValueError(msg)
 
     board = pcbnew.LoadBoard(pcb)
     # bounding_box = board.GetBoardEdgesBoundingBox() #  FIXME use this to check placement
