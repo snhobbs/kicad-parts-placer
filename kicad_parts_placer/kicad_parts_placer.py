@@ -7,13 +7,13 @@ import pcbnew
 
 # the internal coorinate space of pcbnew is 1E-6 mm. (a millionth of a mm)
 # the coordinate 121550000 corresponds to 121.550000
-def get_scale():
+def get_scale() -> float:
     return 1 / 1e-6
 
 
 def group_components(
     components: pd.DataFrame, board: pcbnew.BOARD, group: pcbnew.PCB_GROUP
-):
+) -> pd.DataFrame:
     for _, component in components.iterrows():
         ref_des = component["ref des"]
         module = board.FindFootprintByReference(ref_des)
@@ -22,15 +22,15 @@ def group_components(
     return components
 
 
-def scale_to_mm(unit):
+def scale_to_mm(unit: float) -> float:
     return unit / get_scale()
 
 
-def scale_from_mm(mm):
+def scale_from_mm(mm) -> float:
     return mm * get_scale()
 
 
-def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front"):
+def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbnew.BOARD:
     """
     Move and rotate a part on a board
     :param str ref_def: Reference Designator of part
@@ -57,7 +57,9 @@ def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front"):
     return board
 
 
-def move_module(ref_des: str, position: tuple, rotation: float, board: pcbnew.BOARD):
+def move_module(
+    ref_des: str, position: tuple, rotation: float, board: pcbnew.BOARD
+) -> pcbnew.BOARD:
     """
     Move and rotate a part on a board
     :param str ref_def: Reference Designator of part
@@ -163,7 +165,7 @@ def place_parts(
     mirror: bool = False,
     x: float = 0,
     y: float = 0,
-):
+) -> pcbnew.BOARD:
     """
     :param: pcbnew.BOARD board:
     :param: str group_name:
