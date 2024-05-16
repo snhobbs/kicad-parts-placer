@@ -2,5 +2,5 @@
 
 __author__ = """Simon Hobbs"""
 __email__ = "simon.hobbs@electrooptical.net"
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 from .kicad_parts_placer import *
