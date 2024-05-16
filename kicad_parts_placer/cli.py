@@ -67,6 +67,7 @@ def main(pcb, config, out, inplace, x, y, flip, group_name, debug):
         y=y,
     )
     board.Save(out)
+    return 0
 
 
 if __name__ == "__main__":
