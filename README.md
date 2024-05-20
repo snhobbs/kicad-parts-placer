@@ -8,6 +8,7 @@
   + Creating bed of nails tester
   + Positioning mechanically important parts
   + Maintaining a form factor across different designs
++ Essentially the same as this [Altium feature](https://www.altium.com/documentation/altium-designer/pcb-cmd-placecomponentsfromfileplacecomponentsfromfile-ad)
 
 ## Example Use: Pogo pin & test pad placement
 The project at <https://github.com/snhobbs/kicad-parts-placer/tree/master/example/example-placement> shows an example use.
