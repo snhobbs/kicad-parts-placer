@@ -8,8 +8,8 @@ import logging
 
 import click
 import pcbnew
-import spreadsheet_wrangler
 
+from . import file_io
 from .kicad_parts_placer import place_parts
 
 _log = logging.getLogger("kicad_parts_placer")
@@ -56,7 +56,7 @@ def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
     if drill_center:
         origin=pcbnew.ToMM(board.GetDesignSettings().GetAuxOrigin())
 
-    components = spreadsheet_wrangler.read_file_to_df(config)
+    components = file_io.read_file_to_df(config)
 
     if group_name is None:
         group_name = config.split(".")[0]
