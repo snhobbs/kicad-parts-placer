@@ -4,7 +4,8 @@ import numpy as np
 import pandas as pd
 import pcbnew
 
-_log=logging.getLogger("kicad_parts_placer")
+_log = logging.getLogger("kicad_parts_placer")
+
 
 def group_components(
     components: pd.DataFrame, board: pcbnew.BOARD, group: pcbnew.PCB_GROUP
@@ -120,7 +121,7 @@ def place_parts(
     components_df: pd.DataFrame,
     group_name: str | None = None,
     mirror: bool = False,
-    origin: tuple[float, float] = (0,0)
+    origin: tuple[float, float] = (0, 0),
 ) -> pcbnew.BOARD:
     """
     :param: pcbnew.BOARD board:
@@ -141,23 +142,27 @@ def place_parts(
         components_df["rotation"] = 0
     components_df["rotation"] = np.array(components_df["rotation"], dtype=float)
 
-    if mirror:
-        components_df["rotation"] = (components_df["rotation"] + 180)%360
+    # if mirror:
+    #    components_df["rotation"] = (components_df["rotation"] + 180)%360
 
     #  Scale input to kicad native units
-    components_df["x"] = [pcbnew.FromMM(pt) for pt in (components_df["x"] + origin[0])]
-    mult = 1 if mirror else -1  # normally mirrored relative to cartesian coordinates
-    components_df["y"] = [pcbnew.FromMM(pt) for pt in (components_df["y"]* mult + origin[1])]
+    mult = -1 if mirror else 1
+    components_df["x"] = [
+        pcbnew.FromMM(pt) for pt in (components_df["x"] * mult + origin[0])
+    ]
+    components_df["y"] = [
+        pcbnew.FromMM(pt) for pt in (-1 * components_df["y"] + origin[1])
+    ]  # cartesian -> pixel
 
-    #if min(components_df["x"]) < 0:
+    # if min(components_df["x"]) < 0:
     #    components_df["x"] = components_df["x"] - min(components_df["x"])
 
-    #if min(components_df["y"]) < 0:
+    # if min(components_df["y"]) < 0:
     #    components_df["y"] = components_df["y"] - min(components_df["y"])
 
     # There are no negative positions on a kicad schematic
-    #assert min(components_df["x"]) >= 0
-    #assert min(components_df["y"]) >= 0
+    # assert min(components_df["x"]) >= 0
+    # assert min(components_df["y"]) >= 0
 
     # add a default that won't change the side of the parts
     if "side" not in components_df.columns:
@@ -191,6 +196,5 @@ def place_parts(
         ref_des = component["ref des"]
         position = (component["x"], component["y"])
         move_module(ref_des, position, component["rotation"], board)
-
 
     return board
