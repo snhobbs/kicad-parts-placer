@@ -12,6 +12,7 @@ import spreadsheet_wrangler
 
 from .kicad_parts_placer import place_parts
 
+_log = logging.getLogger("kicad_parts_placer")
 
 @click.command(
     help="Takes a PCB & configuration data in mm, sets rotation and location on a new pcb"
@@ -38,9 +39,9 @@ from .kicad_parts_placer import place_parts
 @click.option("--debug", is_flag=True, help="")
 def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
     logging.basicConfig()
-    logging.getLogger().setLevel(logging.INFO)
+    _log.setLevel(logging.INFO)
     if debug:
-        logging.getLogger().setLevel(logging.DEBUG)
+        _log.setLevel(logging.DEBUG)
 
     if inplace:
         out = pcb

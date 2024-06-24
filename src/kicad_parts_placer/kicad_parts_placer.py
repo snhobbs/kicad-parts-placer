@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pcbnew
 
+_log=logging.getLogger("kicad_parts_placer")
 
 def group_components(
     components: pd.DataFrame, board: pcbnew.BOARD, group: pcbnew.PCB_GROUP
@@ -25,19 +26,21 @@ def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbne
     """
     module = board.FindFootprintByReference(ref_des)
     if module is None:
-        logging.warning("%s not found", ref_des)
+        _log.warning("%s not found", ref_des)
         return None
 
-    logging.debug("%s found", ref_des)
+    _log.debug("%s found", ref_des)
 
     if module.IsLocked():
-        logging.debug("%s locked, skip", ref_des)
+        _log.info("%s locked, skip", ref_des)
         return None
 
     # Set the correct side of the part, reflected over the y axis, correct the rotation later
-    if (side.lower() == "front" and module.GetLayerName() != "F.Cu") or (
-        side.lower() == "back" and module.GetLayerName() == "F.Cu"
+    _log.debug("Side: %s", side)
+    if (side == "front" and module.GetLayerName() != "F.Cu") or (
+        side == "back" and module.GetLayerName() == "F.Cu"
     ):
+        _log.debug("Flip")
         module.Flip(module.GetCenter(), aFlipLeftRight=True)
 
     return board
@@ -52,56 +55,35 @@ def move_module(
     :param tuple(float x, float y) position: Desired center of part in mm
     :param float rotation: Desired rotation of part
     :param pcbnew.BOARD board: Target board
-    """
-    module = board.FindFootprintByReference(ref_des)
-    if module is None:
-        logging.warning("%s not found", ref_des)
-        return None
 
-    logging.debug("%s found", ref_des)
-
-    if module.IsLocked():
-        logging.debug("%s locked, skip", ref_des)
-        return None
-
-    center = module.GetCenter()  # pdbnew.wxPoint
-    new_pos = pcbnew.wxPoint(position[0], position[1])
-    msg = f"{ref_des}: Move from {center} to {new_pos}, {position}"
-    logging.info(msg)
-
-    module.SetOrientationDegrees(rotation)
-    module.SetPosition(pcbnew.VECTOR2I(*new_pos))
-
-    # module.Rotate(module.GetCenter(), component['rotation']*10)
-    msg = f"{ref_des}: rotate {rotation} about {new_pos}"
-    logging.info(msg)
-    return board
-
-
-def move_modules(components: pd.DataFrame, board: pcbnew.BOARD) -> pcbnew.BOARD:
-    """
-    components: pd data frame containing fields:
-        ref des, value, x, y, rotation
-    board: pcbnew.BOARD object to edit
-
-    Cycle through all parts on the board.
     Read the footprints reference
     If the ref des is in components["ref des"] then enter to update
     Update the parts position to the schematics plus the offset
     Update the label to with a configuration table passed to a function
     """
 
-    for _, component in components.iterrows():
-        ref_des = component["ref des"]
-        position = (component["x"], component["y"])
-        move_module(ref_des, position, component["rotation"], board)
-    return board
+    module = board.FindFootprintByReference(ref_des)
+    if module is None:
+        _log.warning("%s not found", ref_des)
+        return None
 
+    _log.debug("%s found", ref_des)
 
-def flip_modules(components: pd.DataFrame, board: pcbnew.BOARD) -> pcbnew.BOARD:
-    for _, component in components.iterrows():
-        ref_des = component["ref des"]
-        flip_module(ref_des, side=component["side"], board=board)
+    if module.IsLocked():
+        _log.info("%s locked, skip", ref_des)
+        return None
+
+    center = module.GetCenter()  # pdbnew.wxPoint
+    new_pos = pcbnew.wxPoint(position[0], position[1])
+    msg = f"{ref_des}: Move from {center} to {new_pos}, {position}"
+    _log.debug(msg)
+
+    module.SetOrientationDegrees(rotation)
+    module.SetPosition(pcbnew.VECTOR2I(*new_pos))
+
+    # module.Rotate(module.GetCenter(), component['rotation']*10)
+    msg = f"{ref_des}: rotate {rotation} about {new_pos}"
+    _log.debug(msg)
     return board
 
 
@@ -151,6 +133,7 @@ def place_parts(
     natural coordinates.
     """
     # Short circuit exit if there's no components, this allows an improperly formated dataframe to be entered if it's empty
+    components_df.columns = [pt.lower().strip() for pt in components_df.columns]
     if len(components_df) == 0:
         return board
 
@@ -190,6 +173,7 @@ def place_parts(
             sides.append("back")
         else:
             sides.append("current")
+    components_df["_side"] = sides
 
     # group
     if group_name is None:
@@ -199,5 +183,14 @@ def place_parts(
     board.Add(pcb_group)
     group_components(components_df, board, pcb_group)
 
-    board = flip_modules(components_df, board)
-    return move_modules(components_df, board)
+    for _, component in components_df.iterrows():
+        ref_des = component["ref des"]
+        flip_module(ref_des, side=component["_side"], board=board)
+
+    for _, component in components_df.iterrows():
+        ref_des = component["ref des"]
+        position = (component["x"], component["y"])
+        move_module(ref_des, position, component["rotation"], board)
+
+
+    return board
