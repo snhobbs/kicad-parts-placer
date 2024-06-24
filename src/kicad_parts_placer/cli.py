@@ -37,6 +37,7 @@ _log = logging.getLogger("kicad_parts_placer")
     "--group", "group_name", type=str, help="name of parts group, defaults to file name"
 )
 @click.option("--debug", is_flag=True, help="")
+@click.version_option()
 def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
     logging.basicConfig()
     _log.setLevel(logging.INFO)

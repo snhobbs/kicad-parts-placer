@@ -26,7 +26,7 @@ dependencies = [
 
 [project.license]
 file="LICENSE"
-name="MIT license"
+name="LGPL"
 
 [project.scripts]
 kicad_parts_placer='kicad_parts_placer.cli:main'
