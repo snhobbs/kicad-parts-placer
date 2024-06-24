@@ -10,9 +10,7 @@ import click
 import pcbnew
 import spreadsheet_wrangler
 
-from .kicad_parts_placer import (
-    place_parts,  # scale_from_mm, group_components, move_modules
-)
+from .kicad_parts_placer import place_parts
 
 
 @click.command(
@@ -26,8 +24,7 @@ from .kicad_parts_placer import (
     "--out", "-o", type=str, required=False, help="PCB file to write output to"
 )
 @click.option("--inplace", "-i", is_flag=True, help="Edit pcb file in place")
-@click.option("-x", type=float, default=0, help="x offset for placement")
-@click.option("-y", type=float, default=0, help="y offset for placement")
+@click.option("--drill_center", is_flag=True, help="Use drill/file/AUX center as reference point")
 # @click.option("--center-on-board", is_flag=True, help="Center group on board bounding box")
 # @click.option("--mirror", is_flag=True, help="Mirror parts, required for matching up the front and back of two boards")
 @click.option(
@@ -39,7 +36,7 @@ from .kicad_parts_placer import (
     "--group", "group_name", type=str, help="name of parts group, defaults to file name"
 )
 @click.option("--debug", is_flag=True, help="")
-def main(pcb, config, out, inplace, x, y, flip, group_name, debug):
+def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
     logging.basicConfig()
     logging.getLogger().setLevel(logging.INFO)
     if debug:
@@ -54,6 +51,10 @@ def main(pcb, config, out, inplace, x, y, flip, group_name, debug):
     board = pcbnew.LoadBoard(pcb)
     # bounding_box = board.GetBoardEdgesBoundingBox() #  FIXME use this to check placement
 
+    origin = (0,0)
+    if drill_center:
+        origin=pcbnew.ToMM(board.GetDesignSettings().GetAuxOrigin())
+
     components = spreadsheet_wrangler.read_file_to_df(config)
 
     if group_name is None:
@@ -62,9 +63,8 @@ def main(pcb, config, out, inplace, x, y, flip, group_name, debug):
         board=board,
         components_df=components,
         group_name=group_name,
-        flip=flip,
-        x=x,
-        y=y,
+        mirror=flip,
+        origin=origin
     )
     board.Save(out)
     return 0

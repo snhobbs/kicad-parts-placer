@@ -41,13 +41,15 @@ dependencies = {file = ["requirements.txt"]}
 [tool.hatch.metadata]
 allow-direct-references = true
 
-[tool.setuptools]
-packages=['kicad_parts_placer']
+#[tool.setuptools]
+#packages=['kicad_parts_placer']
+
+[tool.setuptools.packages.find]
+where=['src']
 
 # ==== pytest ====
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--ds=config.settings.test --reuse-db"
 python_files = [
     "tests.py",
     "test_*.py",

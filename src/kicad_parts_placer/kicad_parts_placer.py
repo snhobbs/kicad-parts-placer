@@ -5,12 +5,6 @@ import pandas as pd
 import pcbnew
 
 
-# the internal coorinate space of pcbnew is 1E-6 mm. (a millionth of a mm)
-# the coordinate 121550000 corresponds to 121.550000
-def get_scale() -> float:
-    return 1 / 1e-6
-
-
 def group_components(
     components: pd.DataFrame, board: pcbnew.BOARD, group: pcbnew.PCB_GROUP
 ) -> pd.DataFrame:
@@ -20,14 +14,6 @@ def group_components(
         if module is not None:
             group.AddItem(module)
     return components
-
-
-def scale_to_mm(unit: float) -> float:
-    return unit / get_scale()
-
-
-def scale_from_mm(mm) -> float:
-    return mm * get_scale()
 
 
 def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbnew.BOARD:
@@ -147,58 +133,48 @@ def center_component_location_on_bounding_box(
     return components
 
 
-def unify_position_reference_to_board_top():
-    """
-    The top and bottom sides of a centroid are referenced to the same
-    """
-
-
-def mirror_components(components: pd.DataFrame) -> pd.DataFrame:
-    components["x"] = max(components["x"]) - components["x"]
-    return components
-
-
 def place_parts(
     board: pcbnew.BOARD,
     components_df: pd.DataFrame,
     group_name: str | None = None,
     mirror: bool = False,
-    x: float = 0,
-    y: float = 0,
+    origin: tuple[float, float] = (0,0)
 ) -> pcbnew.BOARD:
     """
     :param: pcbnew.BOARD board:
     :param: str group_name:
     :param: bool mirror: reflect parts over y axis
-    :param: float x: offset for placement
-    :param: float y: offset for placement
+    :param: origin: reference point in mm
+
+    Done as if looking down on the top of the board. Input can either be absolute or aux origin.
+    The input must be in cartesian coordinates. Check that all the mapped output are within the positive
+    natural coordinates.
     """
     # Short circuit exit if there's no components, this allows an improperly formated dataframe to be entered if it's empty
     if len(components_df) == 0:
         return board
 
+    if "rotation" not in components_df.columns:
+        components_df["rotation"] = 0
     components_df["rotation"] = np.array(components_df["rotation"], dtype=float)
 
+    if mirror:
+        components_df["rotation"] = (components_df["rotation"] + 180)%360
+
     #  Scale input to kicad native units
-    #  Scale input to kicad native units
-    components_df["x"] = scale_from_mm(components_df["x"])
-    mult = 1 - 2 * int(mirror)
-    components_df["y"] = scale_from_mm(components_df["y"]) * mult
+    components_df["x"] = [pcbnew.FromMM(pt) for pt in (components_df["x"] + origin[0])]
+    mult = 1 if mirror else -1  # normally mirrored relative to cartesian coordinates
+    components_df["y"] = [pcbnew.FromMM(pt) for pt in (components_df["y"]* mult + origin[1])]
 
-    # set offset
-    offset = (scale_from_mm(x), scale_from_mm(y))
-    components_df["x"] = components_df["x"] + offset[0]
-    components_df["y"] = components_df["y"] + offset[1]
+    #if min(components_df["x"]) < 0:
+    #    components_df["x"] = components_df["x"] - min(components_df["x"])
 
-    if min(components_df["x"]) < 0:
-        components_df["x"] = components_df["x"] - min(components_df["x"])
-
-    if min(components_df["y"]) < 0:
-        components_df["y"] = components_df["y"] - min(components_df["y"])
+    #if min(components_df["y"]) < 0:
+    #    components_df["y"] = components_df["y"] - min(components_df["y"])
 
     # There are no negative positions on a kicad schematic
-    assert min(components_df["x"]) >= 0
-    assert min(components_df["y"]) >= 0
+    #assert min(components_df["x"]) >= 0
+    #assert min(components_df["y"]) >= 0
 
     # add a default that won't change the side of the parts
     if "side" not in components_df.columns:
