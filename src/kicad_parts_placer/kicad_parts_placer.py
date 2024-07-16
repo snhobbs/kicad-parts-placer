@@ -1,7 +1,11 @@
 import logging
 import copy
 import numpy as np
-import pandas as pd
+try:
+    from pandas import DataFrame
+except ImportError:
+    DataFrame = None
+    pass
 import pcbnew
 
 _log = logging.getLogger("kicad_parts_placer")
@@ -78,8 +82,8 @@ def move_module(
 
 
 def center_component_location_on_bounding_box(
-    components: pd.DataFrame, bounding_box, mirror: bool
-) -> pd.DataFrame:
+    components: DataFrame, bounding_box, mirror: bool
+) -> DataFrame:
     """
     Takes a bounding box and a set of components. Components
     so they fit in the xy center of the box
@@ -107,7 +111,7 @@ def center_component_location_on_bounding_box(
 
 def group_parts(
     board: pcbnew.BOARD,
-    components_df: pd.DataFrame,
+    components_df: DataFrame,
     group_name: str | None = None,
 ) -> pcbnew.BOARD:
     # group
@@ -132,7 +136,7 @@ def group_parts(
 
 def place_parts(
     board: pcbnew.BOARD,
-    components_df: pd.DataFrame,
+    components_df: DataFrame,
     origin: tuple[float, float] = (0, 0),
 ) -> pcbnew.BOARD:
     """
@@ -160,10 +164,10 @@ def place_parts(
 
     #  Scale input to kicad native units
     components_df["x"] = [
-        pcbnew.FromMM(pt) for pt in (components_df["x"] + origin[0])
+        pcbnew.FromMM(float(pt)) for pt in (components_df["x"] + origin[0])
     ]
     components_df["y"] = [
-        pcbnew.FromMM(pt) for pt in (-1 * components_df["y"] + origin[1])
+        pcbnew.FromMM(float(pt)) for pt in (-1 * components_df["y"] + origin[1])
     ]  # cartesian -> pixel
 
     # if min(components_df["x"]) < 0:
@@ -206,7 +210,7 @@ def place_parts(
 
 def mirror_parts(
     board: pcbnew.BOARD,
-    components_df: pd.DataFrame,
+    components_df: DataFrame,
     origin: tuple[float, float] = (0, 0),
 ):
 
