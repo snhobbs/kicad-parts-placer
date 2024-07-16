@@ -10,7 +10,7 @@ import click
 import pcbnew
 
 from . import file_io
-from .kicad_parts_placer import place_parts
+from .kicad_parts_placer import place_parts, mirror_parts, group_parts
 
 _log = logging.getLogger("kicad_parts_placer")
 
@@ -61,13 +61,24 @@ def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
 
     if group_name is None:
         group_name = config.split(".")[0]
+
     board = place_parts(
         board=board,
         components_df=components,
-        group_name=group_name,
-        mirror=flip,
         origin=origin
     )
+
+    board = group_parts(
+        board=board,
+        group_name=group_name,
+        origin=origin)
+
+    if flip:
+        board = mirror_parts(
+            board=board,
+            group_name=group_name,
+            origin=origin)
+
     board.Save(out)
     return 0
 
