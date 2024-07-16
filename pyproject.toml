@@ -34,17 +34,24 @@ kicad_parts_placer='kicad_parts_placer.cli:main'
 [project.urls]
 github='https://github.com/snhobbs/kicad-parts-placer.git'
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
-#[tool.setuptools]
-#packages=['kicad_parts_placer']
-
 [tool.setuptools.packages.find]
 where=['src']
+
+[build-system]
+requires = [
+    "setuptools>=60",
+    "setuptools-scm>=8.0"
+]
+
 
 # ==== pytest ====
 [tool.pytest.ini_options]
