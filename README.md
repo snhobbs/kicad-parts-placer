@@ -27,7 +27,7 @@ The schematic is exported to a PCB which will look like this:
 Running the script on this board with this command exports the following board with the components exactly aligned ready for layout. The group can be treated as a footprint, placed where ever is useful. During layout you only have to deal with a single coordinate as the position within the group is locked.
 
 ```{python}
-kicad-parts-placer --pcb example-placement.kicad_pcb --config centroid-all-pos.csv --out example-placement_placed.kicad_pcb -x 117.5 -y 53
+kicad-parts-placer --pcb example-placement.kicad_pcb --config centroid-all-pos.csv --out example-placement_placed.kicad_pcb --drill_center
 ```
 
 ![Generated PCB](documents/placed_components_board.png)
