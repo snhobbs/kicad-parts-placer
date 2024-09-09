@@ -1,11 +1,15 @@
+"""
+kicad_parts_placer: Place parts programatically
+"""
+
 import logging
 import copy
+from typing import Union
 import numpy as np
 try:
     from pandas import DataFrame
 except ImportError:
     DataFrame = None
-
 import pcbnew
 
 _log = logging.getLogger("kicad_parts_placer")
@@ -112,9 +116,11 @@ def center_component_location_on_bounding_box(
 def group_parts(
     board: pcbnew.BOARD,
     components_df: DataFrame,
-    group_name: str | None = None,
+    group_name: Union[str, None] = None,
 ) -> pcbnew.BOARD:
-    # group
+    """
+    Put all parts in dataframe into a single group
+    """
     if group_name is None:
         group_name = ""  # FIXME name the groups by group_{{INT}}
 
@@ -215,6 +221,9 @@ def mirror_parts(
     components_df: DataFrame,
     origin: tuple[float, float] = (0, 0),
 ):
+    """
+    Mirror parts in an entire dataframe
+    """
 
     components_df = copy.deepcopy(components_df)
     components_df["x"] = -1*components_df["x"]

@@ -27,7 +27,6 @@ _log = logging.getLogger("kicad_parts_placer")
 @click.option("--inplace", "-i", is_flag=True, help="Edit pcb file in place")
 @click.option("--drill_center", is_flag=True, help="Use drill/file/AUX center as reference point")
 # @click.option("--center-on-board", is_flag=True, help="Center group on board bounding box")
-# @click.option("--mirror", is_flag=True, help="Mirror parts, required for matching up the front and back of two boards")
 @click.option(
     "--flip",
     is_flag=True,
@@ -39,6 +38,9 @@ _log = logging.getLogger("kicad_parts_placer")
 @click.option("--debug", is_flag=True, help="")
 @click.version_option()
 def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
+    """
+    top level cli
+    """
     logging.basicConfig()
     _log.setLevel(logging.INFO)
     if debug:

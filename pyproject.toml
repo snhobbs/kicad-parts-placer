@@ -216,10 +216,14 @@ force-single-line = true
 max-line-length = 120
 
 [tool.pylint.TYPECHECK]
-signature-mutators = ["click.decorators.option",
-                   "click.decorators.argument",
-                   "click.decorators.version_option",
-                   "click.decorators.help_option",
-                   "click.decorators.pass_context",
-                   "click.decorators.confirmation_option"]
+signature-mutators = [
+    "click.decorators.option",
+    "click.decorators.argument",
+    "click.decorators.version_option",
+    "click.decorators.help_option",
+    "click.decorators.pass_context",
+    "click.decorators.confirmation_option"
+]
 
+[tool.pylint.MESSAGESCONTROL]
+disable=["C0415"]

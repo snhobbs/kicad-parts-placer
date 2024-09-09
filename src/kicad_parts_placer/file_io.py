@@ -1,3 +1,7 @@
+"""
+file_io.py: All the file read and write functions
+"""
+
 import csv
 from pathlib import Path
 
@@ -6,8 +10,11 @@ import pandas as pd
 
 
 def read_csv_to_df(fname: str, **kwargs) -> pd.DataFrame:
-    # Use automatic dialect detection by setting sep to None and engine to python
-    # try sniffing
+    """
+    Expects sep or delimiter in kwargs. If not included then we
+    fallback on the pandas interpretation
+    Use automatic dialect detection by setting sep to None and engine to python
+    """
     if "delimiter" in kwargs and "sep" not in kwargs:
         kwargs["sep"] = kwargs["delimiter"]
 
@@ -21,6 +28,9 @@ def read_csv_to_df(fname: str, **kwargs) -> pd.DataFrame:
 
 
 def read_ods_format_to_df(fname: str, **kwargs) -> pd.DataFrame:
+    """
+    Read ODS format to dataframe
+    """
     import pyexcel_ods3
 
     data = pyexcel_ods3.get_data(fname, **kwargs)
@@ -106,6 +116,10 @@ def read_file_to_df(fname: str, **kwargs) -> pd.DataFrame:
 
 
 def write(df: pd.DataFrame, fname: str, **kwargs) -> None:
+    """
+    Search for the correct exporter and write the dataframe
+    using that writer.
+    """
     ext = Path(fname).suffix.strip(".").lower()
     types = get_supported_file_types_df()
     writer = None
