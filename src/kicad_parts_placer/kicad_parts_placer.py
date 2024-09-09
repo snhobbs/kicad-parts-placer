@@ -82,7 +82,7 @@ def move_module(
 
 
 def center_component_location_on_bounding_box(
-    components: DataFrame, bounding_box, mirror: bool
+    components: DataFrame, bounding_box
 ) -> DataFrame:
     """
     Takes a bounding box and a set of components. Components
@@ -145,9 +145,10 @@ def place_parts(
     :param: bool mirror: reflect parts over y axis
     :param: origin: reference point in mm
 
-    Done as if looking down on the top of the board. Input can either be absolute or aux origin.
-    The input must be in cartesian coordinates. Check that all the mapped output are within the positive
-    natural coordinates.
+    Done as if looking down on the top of the board.
+    Input can either be absolute or aux origin.
+    The input must be in cartesian coordinates.
+    Check that all the mapped output are within the positive natural coordinates.
     """
     # Short circuit exit if there's no components, this allows an improperly formated dataframe to be entered if it's empty
     components_df = copy.deepcopy(components_df)

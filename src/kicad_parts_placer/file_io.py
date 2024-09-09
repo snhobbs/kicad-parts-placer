@@ -8,16 +8,19 @@ import pandas as pd
 def read_csv_to_df(fname: str, **kwargs) -> pd.DataFrame:
     # Use automatic dialect detection by setting sep to None and engine to python
     # try sniffing
+    if "delimiter" in kwargs and "sep" not in kwargs:
+        kwargs["sep"] = kwargs["delimiter"]
+
+    kwargs["delimiter"] = None
+    if "sep" in kwargs:
+        try:
+            return pd.read_csv(fname, **kwargs)
+        except Exception:
+            pass
     try:
         # Use automatic dialect detection by setting sep to None and engine to python
         kwargs["sep"] = None
-        kwargs["delimiter"] = None
         return pd.read_csv(fname, engine="python", **kwargs)
-    except Exception:
-        pass
-    try:
-        kwargs["sep"] = ","
-        return pd.read_csv(fname, **kwargs)
     except Exception:
         pass
     try:
@@ -25,6 +28,12 @@ def read_csv_to_df(fname: str, **kwargs) -> pd.DataFrame:
         return pd.read_csv(fname, **kwargs)
     except Exception:
         raise
+    try:
+        # Use automatic dialect detection by setting sep to None and engine to python
+        kwargs["sep"] = None
+        return pd.read_csv(fname, engine="python", **kwargs)
+    except Exception:
+        pass
 
 
 def read_ods_format_to_df(fname: str, **kwargs) -> pd.DataFrame:
