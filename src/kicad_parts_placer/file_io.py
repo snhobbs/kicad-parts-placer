@@ -13,27 +13,11 @@ def read_csv_to_df(fname: str, **kwargs) -> pd.DataFrame:
 
     kwargs["delimiter"] = None
     if "sep" in kwargs:
-        try:
-            return pd.read_csv(fname, **kwargs)
-        except Exception:
-            pass
-    try:
-        # Use automatic dialect detection by setting sep to None and engine to python
-        kwargs["sep"] = None
-        return pd.read_csv(fname, engine="python", **kwargs)
-    except Exception:
-        pass
-    try:
-        kwargs["sep"] = ";"
         return pd.read_csv(fname, **kwargs)
-    except Exception:
-        raise
-    try:
-        # Use automatic dialect detection by setting sep to None and engine to python
-        kwargs["sep"] = None
-        return pd.read_csv(fname, engine="python", **kwargs)
-    except Exception:
-        pass
+
+    # Use automatic dialect detection by setting sep to None and engine to python
+    kwargs["sep"] = None
+    return pd.read_csv(fname, engine="python", **kwargs)
 
 
 def read_ods_format_to_df(fname: str, **kwargs) -> pd.DataFrame:

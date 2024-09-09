@@ -70,13 +70,13 @@ def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
 
     board = group_parts(
         board=board,
-        group_name=group_name,
-        origin=origin)
+        components_df=components,
+        group_name=group_name)
 
     if flip:
         board = mirror_parts(
             board=board,
-            group_name=group_name,
+            components_df=components,
             origin=origin)
 
     board.Save(out)

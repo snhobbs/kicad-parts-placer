@@ -5,7 +5,7 @@ try:
     from pandas import DataFrame
 except ImportError:
     DataFrame = None
-    pass
+
 import pcbnew
 
 _log = logging.getLogger("kicad_parts_placer")
@@ -150,7 +150,8 @@ def place_parts(
     The input must be in cartesian coordinates.
     Check that all the mapped output are within the positive natural coordinates.
     """
-    # Short circuit exit if there's no components, this allows an improperly formated dataframe to be entered if it's empty
+    # Short circuit exit if there are no components
+    # this allows an improperly formated dataframe to be entered if it's empty
     components_df = copy.deepcopy(components_df)
     components_df.columns = [pt.lower().strip() for pt in components_df.columns]
     if len(components_df) == 0:
