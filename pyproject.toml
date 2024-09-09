@@ -1,6 +1,6 @@
 [project]
 name="kicad_parts_placer"
-version="0.1.7"
+version="0.1.8"
 #dynamic = ["dependencies"]
 authors=[
     {name="Simon Hobbs", email='simon.hobbs@electrooptical.net'}]
