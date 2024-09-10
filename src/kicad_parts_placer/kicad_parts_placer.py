@@ -5,7 +5,6 @@ kicad_parts_placer: Place parts programatically
 import logging
 import copy
 from typing import Union
-import numpy as np
 try:
     from pandas import DataFrame
 except ImportError:
@@ -108,8 +107,8 @@ def center_component_location_on_bounding_box(
         get_offset(components["y"], (bounding_box.GetBottom(), bounding_box.GetTop())),
     )
 
-    components["x"] = components["x"] + bounding_box.GetRight() - offset[0]
-    components["y"] = components["y"] + bounding_box.GetTop() + offset[1]
+    components["x"] = [pt + bounding_box.GetRight() - offset[0] for pt in components["x"]]
+    components["y"] = [pt + bounding_box.GetTop() + offset[1] for pt in components["y"]]
     return components
 
 
@@ -165,17 +164,17 @@ def place_parts(
 
     if "rotation" not in components_df.columns:
         components_df["rotation"] = 0
-    components_df["rotation"] = np.array(components_df["rotation"], dtype=float)
+    components_df["rotation"] = [float(pt) for pt in components_df["rotation"]]
 
     # if mirror:
     #    components_df["rotation"] = (components_df["rotation"] + 180)%360
 
     #  Scale input to kicad native units
     components_df["x"] = [
-        pcbnew.FromMM(float(pt)) for pt in (components_df["x"] + origin[0])
+        pcbnew.FromMM(float(pt + origin[0])) for pt in (components_df["x"])
     ]
     components_df["y"] = [
-        pcbnew.FromMM(float(pt)) for pt in (-1 * components_df["y"] + origin[1])
+        pcbnew.FromMM(float(-1*pt + origin[1])) for pt in (components_df["y"])
     ]  # cartesian -> pixel
 
     # if min(components_df["x"]) < 0:
@@ -226,6 +225,6 @@ def mirror_parts(
     """
 
     components_df = copy.deepcopy(components_df)
-    components_df["x"] = -1*components_df["x"]
+    components_df["x"] = [-1*pt for pt in components_df["x"]]
     place_parts(board, components_df, origin)
     return board
