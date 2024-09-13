@@ -5,11 +5,8 @@ kicad_parts_placer: Place parts programatically
 import logging
 import copy
 from typing import Union
-try:
-    from pandas import DataFrame
-except ImportError:
-    DataFrame = None
 import pcbnew
+from .dataframe_lite import DataFrame
 
 _log = logging.getLogger("kicad_parts_placer")
 
@@ -27,6 +24,7 @@ for key, value_array in _header_pseudonyms.items():
         _pseudonyms_invert[value] = key
 
 _required_columns = ("x", "y", "refdes")
+
 
 def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbnew.BOARD:
     """
