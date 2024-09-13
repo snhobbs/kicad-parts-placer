@@ -1,12 +1,13 @@
 """Tests for `kicad_parts_placer` package."""
 
+import logging
+import tempfile
 import unittest
+import pandas as pd
 
 from click.testing import CliRunner
 
-import kicad_parts_placer
-from kicad_parts_placer import cli, file_io
-import tempfile
+from kicad_parts_placer import cli, file_io, kicad_parts_placer
 
 class TestKicad_parts_placer(unittest.TestCase):
     """Tests for `kicad_parts_placer` package."""
@@ -30,6 +31,25 @@ class TestKicad_parts_placer(unittest.TestCase):
         assert help_result.exit_code == 0
         assert "Show this message and exit." in help_result.output
 
+    def test_translate_header(self):
+        logging.info(kicad_parts_placer.translate_header(["ref des"]) )
+        self.assertEqual(kicad_parts_placer.translate_header(["posx"]), ("x",))
+        self.assertEqual(kicad_parts_placer.translate_header(["midx"]), ("x",))
+        self.assertEqual(kicad_parts_placer.translate_header(["posy"]), ("y",))
+        self.assertEqual(kicad_parts_placer.translate_header(["midy"]), ("y",))
+        self.assertEqual(kicad_parts_placer.translate_header(["rot"]), ("rotation",))
+        self.assertEqual(kicad_parts_placer.translate_header(["Rot"]), ("rotation",))
+        self.assertEqual(kicad_parts_placer.translate_header(["ROT "]), ("rotation",))
+        self.assertEqual(kicad_parts_placer.translate_header(["RO"]), ("RO",))
+        self.assertEqual(kicad_parts_placer.translate_header(["rotation"]), ("rotation",))
+        self.assertEqual(kicad_parts_placer.translate_header([" Rotation"]), ("rotation",))
+        self.assertEqual(kicad_parts_placer.translate_header(["side"]), ("side",))
+        self.assertEqual(kicad_parts_placer.translate_header(["layer"]), ("side",))
+        self.assertEqual(kicad_parts_placer.translate_header(["ref des"]), ("refdes",))
+        self.assertEqual(kicad_parts_placer.translate_header(["reference designator"]), ("refdes",))
+
 
 if __name__ == "__main__":
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.DEBUG)
     unittest.main()

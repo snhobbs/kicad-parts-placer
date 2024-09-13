@@ -13,6 +13,20 @@ import pcbnew
 
 _log = logging.getLogger("kicad_parts_placer")
 
+_header_pseudonyms = {
+    "x": ["posx", "positionx", "xpos", "xposition", "midx", "xmid", "x"],
+    "y": ["posy", "positiony", "ypos", "yposition", "midy", "ymid", "y"],
+    "rotation": ["rot", "angle", "rotate", "rotation"],
+    "side": ["layer", "side"],
+    "refdes": ["designator", "referencedesignator", "ref", "refdes"],
+}
+
+_pseudonyms_invert = {}
+for key, value_array in _header_pseudonyms.items():
+    for value in value_array:
+        _pseudonyms_invert[value] = key
+
+_required_columns = ("x", "y", "refdes")
 
 def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbnew.BOARD:
     """
@@ -54,7 +68,7 @@ def move_module(
     :param pcbnew.BOARD board: Target board
 
     Read the footprints reference
-    If the ref des is in components["ref des"] then enter to update
+    If the refdes is in components["refdes"] then enter to update
     Update the parts position to the schematics plus the offset
     Update the label to with a configuration table passed to a function
     """
@@ -131,12 +145,23 @@ def group_parts(
     group.SetName(group_name)
     board.Add(group)
     for _, component in components_df.iterrows():
-        ref_des = component["ref des"]
+        ref_des = component["refdes"]
         module = board.FindFootprintByReference(ref_des)
         if module is not None:
             group.AddItem(module)
 
     return board
+
+
+def translate_header(header):
+    """
+    Translate the header to a standardized form.
+    If the tag cannot be found then just return it unchanged
+    """
+
+    header_dict = {col.lower().replace(" ", "") : col for col in header}
+    logging.error(_pseudonyms_invert)
+    return tuple([_pseudonyms_invert.get(key, header_dict[key]) for key in header_dict])
 
 
 def place_parts(
@@ -162,6 +187,8 @@ def place_parts(
     if len(components_df) == 0:
         return board
 
+    components_df.columns = translate_header(components_df.columns)
+
     if "rotation" not in components_df.columns:
         components_df["rotation"] = 0
     components_df["rotation"] = [float(pt) for pt in components_df["rotation"]]
@@ -176,16 +203,6 @@ def place_parts(
     components_df["y"] = [
         pcbnew.FromMM(float(-1*pt + origin[1])) for pt in (components_df["y"])
     ]  # cartesian -> pixel
-
-    # if min(components_df["x"]) < 0:
-    #    components_df["x"] = components_df["x"] - min(components_df["x"])
-
-    # if min(components_df["y"]) < 0:
-    #    components_df["y"] = components_df["y"] - min(components_df["y"])
-
-    # There are no negative positions on a kicad schematic
-    # assert min(components_df["x"]) >= 0
-    # assert min(components_df["y"]) >= 0
 
     # add a default that won't change the side of the parts
     if "side" not in components_df.columns:
@@ -204,11 +221,11 @@ def place_parts(
     components_df["_side"] = sides
 
     for _, component in components_df.iterrows():
-        ref_des = component["ref des"]
+        ref_des = component["refdes"]
         flip_module(ref_des, side=component["_side"], board=board)
 
     for _, component in components_df.iterrows():
-        ref_des = component["ref des"]
+        ref_des = component["refdes"]
         position = (component["x"], component["y"])
         move_module(ref_des, position, component["rotation"], board)
 

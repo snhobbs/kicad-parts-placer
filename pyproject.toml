@@ -1,7 +1,7 @@
 [project]
 name="kicad_parts_placer"
 version="0.1.8"
-#dynamic = ["dependencies"]
+dynamic = ["dependencies"]
 authors=[
     {name="Simon Hobbs", email='simon.hobbs@electrooptical.net'}]
 requires-python='>=3.8'
@@ -17,12 +17,6 @@ classifiers=[
 description="Place components in a kicad file programmatically."
 keywords=['kicad_parts_placer', 'kicad', 'python', 'eda', 'electronics', 'pcb', 'manufacturing']
 readme="README.md"
-
-dependencies = [
-    'click>=7.0',
-    'pandas',
-    'numpy',
-]
 
 [project.license]
 file="LICENSE"
