@@ -10,11 +10,11 @@ import pcbnew
 _log = logging.getLogger("kicad_parts_placer")
 
 _header_pseudonyms = {
+    "refdes": ["designator", "referencedesignator", "ref", "refdes"],
     "x": ["posx", "positionx", "xpos", "xposition", "midx", "xmid", "x"],
     "y": ["posy", "positiony", "ypos", "yposition", "midy", "ymid", "y"],
     "rotation": ["rot", "angle", "rotate", "rotation"],
     "side": ["layer", "side"],
-    "refdes": ["designator", "referencedesignator", "ref", "refdes"],
 }
 
 _pseudonyms_invert = {}
@@ -23,6 +23,17 @@ for key, value_array in _header_pseudonyms.items():
         _pseudonyms_invert[value] = key
 
 _required_columns = ("x", "y", "refdes")
+
+
+def translate_header(header):
+    """
+    Translate the header to a standardized form.
+    If the tag cannot be found then just return it unchanged
+    """
+
+    header_dict = {col.lower().strip().replace(" ", "") : col for col in header}
+    _log.debug(header_dict)
+    return tuple([_pseudonyms_invert.get(key, header_dict[key]) for key in header_dict])
 
 
 def setup_dataframe(components_df):
@@ -213,16 +224,6 @@ def group_parts(
     return board
 
 
-def translate_header(header):
-    """
-    Translate the header to a standardized form.
-    If the tag cannot be found then just return it unchanged
-    """
-
-    header_dict = {col.lower().replace(" ", "") : col for col in header}
-    return tuple([_pseudonyms_invert.get(key, header_dict[key]) for key in header_dict])
-
-
 def place_parts(
     board: pcbnew.BOARD,
     components_df,
@@ -242,13 +243,6 @@ def place_parts(
     # Short circuit exit if there are no components
     # this allows an improperly formated dataframe to be entered if it's empty
     if len(components_df) == 0:
-        return board
-
-    components_df = setup_dataframe(components_df)
-    valid, errors = check_input_valid(components_df)
-    if not valid:
-        msg = "\n".join(errors)
-        _log.error(msg)
         return board
 
     #  Scale input to kicad native units
