@@ -10,7 +10,8 @@ import click
 import pcbnew
 
 from . import file_io
-from .kicad_parts_placer import place_parts, mirror_parts, group_parts
+from .kicad_parts_placer import place_parts, mirror_parts, group_parts, setup_dataframe, check_input_valid
+from . import __version__
 
 _log = logging.getLogger("kicad_parts_placer")
 
@@ -36,7 +37,7 @@ _log = logging.getLogger("kicad_parts_placer")
     "--group", "group_name", type=str, help="name of parts group, defaults to file name"
 )
 @click.option("--debug", is_flag=True, help="")
-@click.version_option()
+@click.version_option(__version__)
 def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
     """
     top level cli
@@ -59,7 +60,13 @@ def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
     if drill_center:
         origin=pcbnew.ToMM(board.GetDesignSettings().GetAuxOrigin())
 
-    components = file_io.read_file_to_df(config)
+    components = setup_dataframe(file_io.read_file_to_df(config))
+    input_valid, input_errors = check_input_valid(components)
+
+    if not input_valid:
+        msg = "\n".join(input_errors)
+        _log.error(msg)
+        return
 
     if group_name is None:
         group_name = config.split(".")[0]
@@ -82,6 +89,7 @@ def main(pcb, config, out, inplace, drill_center, flip, group_name, debug):
             origin=origin)
 
     board.Save(out)
+    _log.info(f"Placement complete. Board saved {out}")
     return 0
 
 

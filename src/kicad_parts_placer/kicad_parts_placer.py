@@ -6,7 +6,6 @@ import logging
 import copy
 from typing import Union
 import pcbnew
-from .dataframe_lite import DataFrame
 
 _log = logging.getLogger("kicad_parts_placer")
 
@@ -24,6 +23,69 @@ for key, value_array in _header_pseudonyms.items():
         _pseudonyms_invert[value] = key
 
 _required_columns = ("x", "y", "refdes")
+
+
+def setup_dataframe(components_df):
+    """
+    Change the dataframe into a standard form
+    """
+    components_df = copy.deepcopy(components_df)
+    components_df.columns = [pt.lower().strip() for pt in components_df.columns]
+    components_df.columns = translate_header(components_df.columns)
+
+    if "rotation" not in components_df.columns:
+        components_df["rotation"] = 0
+    components_df["rotation"] = [float(pt) for pt in components_df["rotation"]]
+
+    # if mirror:
+    #    components_df["rotation"] = (components_df["rotation"] + 180)%360
+
+    # add a default that won't change the side of the parts
+    if "side" not in components_df.columns:
+        components_df["side"] = "current"
+
+    pseudonyms = {"front": ["front", "top", "f.cu"], "back": ["back", "bottom", "b.cu"]}
+
+    sides = []
+    for pt in components_df["side"]:
+        if pt.lower() in pseudonyms["front"]:
+            sides.append("front")
+        elif pt.lower() in pseudonyms["back"]:
+            sides.append("back")
+        else:
+            sides.append("current")
+    components_df["side"] = sides
+    return components_df
+
+
+def check_line_valid(line):
+    """
+    Must have all fields populated
+    """
+    return (isinstance(line["rotation"], (float, int)) and
+            isinstance(line["x"], (float, int)) and
+            isinstance(line["y"], (float, int)) and
+            line["side"] in ("front", "back", "current") and
+            isinstance(line["refdes"], str))
+
+
+def check_input_valid(components_df):
+    """
+    + Take input in a standard form
+    + Check all expected fields are there
+    + Check each line is correct
+    + Return success/fail and the errors
+    """
+    missing = set(_header_pseudonyms.keys()).difference(set(components_df.columns))
+    if len(missing):
+        return False, [f"Missing Field {pt}" for pt in missing]
+
+    errors = []
+    for i, line in components_df.iterrows():
+        if not check_line_valid(line):
+            errors.append(f"{i}: Error {line}")
+
+    return len(errors)==0, errors
 
 
 def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbnew.BOARD:
@@ -97,8 +159,8 @@ def move_module(
 
 
 def center_component_location_on_bounding_box(
-    components: DataFrame, bounding_box
-) -> DataFrame:
+    components, bounding_box
+):
     """
     Takes a bounding box and a set of components. Components
     so they fit in the xy center of the box
@@ -126,7 +188,7 @@ def center_component_location_on_bounding_box(
 
 def group_parts(
     board: pcbnew.BOARD,
-    components_df: DataFrame,
+    components_df,
     group_name: Union[str, None] = None,
 ) -> pcbnew.BOARD:
     """
@@ -158,13 +220,12 @@ def translate_header(header):
     """
 
     header_dict = {col.lower().replace(" ", "") : col for col in header}
-    logging.error(_pseudonyms_invert)
     return tuple([_pseudonyms_invert.get(key, header_dict[key]) for key in header_dict])
 
 
 def place_parts(
     board: pcbnew.BOARD,
-    components_df: DataFrame,
+    components_df,
     origin: tuple[float, float] = (0, 0),
 ) -> pcbnew.BOARD:
     """
@@ -180,19 +241,15 @@ def place_parts(
     """
     # Short circuit exit if there are no components
     # this allows an improperly formated dataframe to be entered if it's empty
-    components_df = copy.deepcopy(components_df)
-    components_df.columns = [pt.lower().strip() for pt in components_df.columns]
     if len(components_df) == 0:
         return board
 
-    components_df.columns = translate_header(components_df.columns)
-
-    if "rotation" not in components_df.columns:
-        components_df["rotation"] = 0
-    components_df["rotation"] = [float(pt) for pt in components_df["rotation"]]
-
-    # if mirror:
-    #    components_df["rotation"] = (components_df["rotation"] + 180)%360
+    components_df = setup_dataframe(components_df)
+    valid, errors = check_input_valid(components_df)
+    if not valid:
+        msg = "\n".join(errors)
+        _log.error(msg)
+        return board
 
     #  Scale input to kicad native units
     components_df["x"] = [
@@ -202,25 +259,9 @@ def place_parts(
         pcbnew.FromMM(float(-1*pt + origin[1])) for pt in (components_df["y"])
     ]  # cartesian -> pixel
 
-    # add a default that won't change the side of the parts
-    if "side" not in components_df.columns:
-        components_df["side"] = "current"
-
-    pseudonyms = {"front": ["front", "top", "f.cu"], "back": ["back", "bottom", "b.cu"]}
-
-    sides = []
-    for pt in components_df["side"]:
-        if pt.lower() in pseudonyms["front"]:
-            sides.append("front")
-        elif pt.lower() in pseudonyms["back"]:
-            sides.append("back")
-        else:
-            sides.append("current")
-    components_df["_side"] = sides
-
     for _, component in components_df.iterrows():
         ref_des = component["refdes"]
-        flip_module(ref_des, side=component["_side"], board=board)
+        flip_module(ref_des, side=component["side"], board=board)
 
     for _, component in components_df.iterrows():
         ref_des = component["refdes"]
@@ -232,7 +273,7 @@ def place_parts(
 
 def mirror_parts(
     board: pcbnew.BOARD,
-    components_df: DataFrame,
+    components_df,
     origin: tuple[float, float] = (0, 0),
 ):
     """
