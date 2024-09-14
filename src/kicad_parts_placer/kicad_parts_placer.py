@@ -99,6 +99,18 @@ def check_input_valid(components_df):
     return len(errors)==0, errors
 
 
+def get_missing_references(board: pcbnew.BOARD, components_df):
+    """
+    return a list of missing modules
+    """
+    missing_modules = []
+    for ref_des in components_df["refdes"]:
+        module = board.FindFootprintByReference(ref_des)
+        if module is None:
+            missing_modules.append(ref_des)
+    return missing_modules
+
+
 def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbnew.BOARD:
     """
     Move and rotate a part on a board
