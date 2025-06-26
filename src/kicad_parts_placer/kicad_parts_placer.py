@@ -45,7 +45,7 @@ def setup_dataframe(components_df):
     components_df.columns = translate_header(components_df.columns)
 
     if "rotation" not in components_df.columns:
-        components_df["rotation"] = 0
+        components_df["rotation"] = [0]*len(components_df)
     components_df["rotation"] = [float(pt) for pt in components_df["rotation"]]
 
     # if mirror:
@@ -53,7 +53,7 @@ def setup_dataframe(components_df):
 
     # add a default that won't change the side of the parts
     if "side" not in components_df.columns:
-        components_df["side"] = "current"
+        components_df["side"] = ["current"]*len(components_df)
 
     pseudonyms = {"front": ["front", "top", "f.cu"], "back": ["back", "bottom", "b.cu"]}
 
