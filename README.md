@@ -1,18 +1,20 @@
 # kicad-parts-placer
+**Tool for precise, batch placement of components in a KiCad PCB layout.**
 
-<https://maskset.net/kicad-parts-placer.html>
++ [Blog Post](https://maskset.net/kicad-parts-placer.html)
 
+## Features
 + Exact batch placement of components in a layout
 + Groups the components allowing them to be moved and positioned as a group, easily ensuring exact alignment
 + Useful for:
   + Creating bed of nails tester
   + Positioning mechanically important parts
   + Maintaining a form factor across different designs
-+ Essentially the same as this [Altium feature](https://www.altium.com/documentation/altium-designer/pcb-cmd-placecomponentsfromfileplacecomponentsfromfile-ad)
++ Similar in function to this [Altium feature](https://www.altium.com/documentation/altium-designer/pcb-cmd-placecomponentsfromfileplacecomponentsfromfile-ad)
 
 ## Example Use: Pogo pin & test pad placement
-The project at <https://github.com/snhobbs/kicad-parts-placer/tree/master/example/example-placement> shows an example use.
-This takes a centroid file from an existing design which is edited for input.
+An example is provided at [example/example-placement](example/example-placement).
+This example starts from a centroid file generated from an existing design, which is edited to serve as the input configuration:
 
 ![Config file from centroid](documents/config_placements.png)
 
@@ -50,22 +52,20 @@ kicad-parts-placer --pcb example-placement.kicad_pcb --config centroid-all-pos.c
 
 ## Installation
 ### PyPi
-All you need to run is:
 ```
 pip install kicad-parts-placer
 ```
 
-### Source
-To install from source:
+### From Source
 ```
 git clone https://github.com/snhobbs/kicad-parts-placer
 cd kicad-parts-placer
 pip install .
 ```
 
-### KiCAD Plugin
-This is also available as a KiCAD plugin in the PCM.
+### KiCad Plugin
+This tool is also available as a plugin via KiCad’s Plugin and Content Manager (PCM).
 
 ## References
-+ Manual kicad location extraction: https://tinylabs.io/openfixture-kicad-export/
-+ KiCAD schematic to pcb position: https://github.com/ian-ross/kicad-plugins
++ [OpenFixture: Manual KiCad Location Export](https://tinylabs.io/openfixture-kicad-export)
++ [KiCad Schematic-to-PCB Position Plugin by Ian Ross](https://github.com/ian-ross/kicad-plugins)

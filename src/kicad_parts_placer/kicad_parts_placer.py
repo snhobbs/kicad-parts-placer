@@ -10,11 +10,11 @@ import pcbnew
 _log = logging.getLogger("kicad_parts_placer")
 
 _HEADER_PSEUDONYMS = {
+    "refdes": ["designator", "referencedesignator", "ref", "refdes"],
     "x": ["posx", "positionx", "xpos", "xposition", "midx", "xmid", "x"],
     "y": ["posy", "positiony", "ypos", "yposition", "midy", "ymid", "y"],
     "rotation": ["rot", "angle", "rotate", "rotation"],
     "side": ["layer", "side"],
-    "refdes": ["designator", "referencedesignator", "ref", "refdes"],
 }
 
 
@@ -23,6 +23,15 @@ _PSEUDONYMS_INVERT = {
 }
 
 _REQUIRED_COLUMNS = {"x", "y", "refdes"}
+
+def translate_header(header):
+    """
+    Translate the header to a standardized form.
+    If the tag cannot be found then just return it unchanged
+    """
+
+    header_dict = {col.lower().replace(" ", "") : col for col in header}
+    return tuple([_PSEUDONYMS_INVERT.get(key, header_dict[key]) for key in header_dict])
 
 
 def setup_dataframe(components_df):
@@ -86,6 +95,18 @@ def check_input_valid(components_df):
             errors.append(f"{i}: Error {line}")
 
     return len(errors)==0, errors
+
+
+def get_missing_references(board: pcbnew.BOARD, components_df):
+    """
+    return a list of missing modules
+    """
+    missing_modules = []
+    for ref_des in components_df["refdes"]:
+        module = board.FindFootprintByReference(ref_des)
+        if module is None:
+            missing_modules.append(ref_des)
+    return missing_modules
 
 
 def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbnew.BOARD:
@@ -213,16 +234,6 @@ def group_parts(
     return board
 
 
-def translate_header(header):
-    """
-    Translate the header to a standardized form.
-    If the tag cannot be found then just return it unchanged
-    """
-
-    header_dict = {col.lower().replace(" ", "") : col for col in header}
-    return tuple([_PSEUDONYMS_INVERT.get(key, header_dict[key]) for key in header_dict])
-
-
 def place_parts(
     board: pcbnew.BOARD,
     components_df,
@@ -242,13 +253,6 @@ def place_parts(
     # Short circuit exit if there are no components
     # this allows an improperly formated dataframe to be entered if it's empty
     if len(components_df) == 0:
-        return board
-
-    components_df = setup_dataframe(components_df)
-    valid, errors = check_input_valid(components_df)
-    if not valid:
-        msg = "\n".join(errors)
-        _log.error(msg)
         return board
 
     #  Scale input to kicad native units
