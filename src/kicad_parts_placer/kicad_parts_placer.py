@@ -9,7 +9,7 @@ import pcbnew
 
 _log = logging.getLogger("kicad_parts_placer")
 
-_header_pseudonyms = {
+_HEADER_PSEUDONYMS = {
     "refdes": ["designator", "referencedesignator", "ref", "refdes"],
     "x": ["posx", "positionx", "xpos", "xposition", "midx", "xmid", "x"],
     "y": ["posy", "positiony", "ypos", "yposition", "midy", "ymid", "y"],
@@ -17,13 +17,12 @@ _header_pseudonyms = {
     "side": ["layer", "side"],
 }
 
-_pseudonyms_invert = {}
-for key, value_array in _header_pseudonyms.items():
-    for value in value_array:
-        _pseudonyms_invert[value] = key
 
-_required_columns = ("x", "y", "refdes")
+_PSEUDONYMS_INVERT = {
+    alias: key for key, aliases in _HEADER_PSEUDONYMS.items() for alias in aliases
+}
 
+_REQUIRED_COLUMNS = {"x", "y", "refdes"}
 
 def translate_header(header):
     """
@@ -31,9 +30,8 @@ def translate_header(header):
     If the tag cannot be found then just return it unchanged
     """
 
-    header_dict = {col.lower().strip().replace(" ", "") : col for col in header}
-    _log.debug(header_dict)
-    return tuple([_pseudonyms_invert.get(key, header_dict[key]) for key in header_dict])
+    header_dict = {col.lower().replace(" ", "") : col for col in header}
+    return tuple([_PSEUDONYMS_INVERT.get(key, header_dict[key]) for key in header_dict])
 
 
 def setup_dataframe(components_df):
@@ -87,7 +85,7 @@ def check_input_valid(components_df):
     + Check each line is correct
     + Return success/fail and the errors
     """
-    missing = set(_header_pseudonyms.keys()).difference(set(components_df.columns))
+    missing = set(_HEADER_PSEUDONYMS.keys()).difference(set(components_df.columns))
     if len(missing):
         return False, [f"Missing Field {pt}" for pt in missing]
 
