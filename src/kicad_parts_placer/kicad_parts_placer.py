@@ -4,8 +4,16 @@ kicad_parts_placer: Place parts programatically
 
 import logging
 import copy
-from typing import Union
+from typing import Union, Tuple
 import pcbnew
+from enum import Enum
+
+
+class SideEnum(Enum):
+    top = "TOP"
+    bottom = "BOTTOM"
+    current = "CURRENT"
+
 
 _log = logging.getLogger("kicad_parts_placer")
 
@@ -44,7 +52,7 @@ def setup_dataframe(components_df):
     components_df.columns = translate_header(components_df.columns)
 
     if "rotation" not in components_df.columns:
-        components_df["rotation"] = 0
+        components_df["rotation"] = [0] * len(components_df)
     components_df["rotation"] = [float(pt) for pt in components_df["rotation"]]
 
     # if mirror:
@@ -52,18 +60,23 @@ def setup_dataframe(components_df):
 
     # add a default that won't change the side of the parts
     if "side" not in components_df.columns:
-        components_df["side"] = "current"
+        components_df["side"] = [SideEnum.current] * len(components_df)
 
-    pseudonyms = {"front": ["front", "top", "f.cu"], "back": ["back", "bottom", "b.cu"]}
+    pseudonyms = {
+        SideEnum.top: ["front", "top", "f.cu"],
+        SideEnum.bottom: ["back", "bottom", "b.cu"],
+    }
+    reverse_pseudonyms = {}
+    for key, values in pseudonyms.items():
+        for value in values:
+            reverse_pseudonyms[value] = key
 
     sides = []
     for pt in components_df["side"]:
-        if pt.lower() in pseudonyms["front"]:
-            sides.append("front")
-        elif pt.lower() in pseudonyms["back"]:
-            sides.append("back")
-        else:
-            sides.append("current")
+        try:
+            sides.append(reverse_pseudonyms[pt.lower().strip()])
+        except KeyError:
+            sides.append(SideEnum.current)
     components_df["side"] = sides
     return components_df
 
@@ -76,7 +89,7 @@ def check_line_valid(line):
         isinstance(line["rotation"], (float, int))
         and isinstance(line["x"], (float, int))
         and isinstance(line["y"], (float, int))
-        and line["side"] in ("front", "back", "current")
+        and line["side"] in (SideEnum.bottom, SideEnum.current, SideEnum.top)
         and isinstance(line["refdes"], str)
     )
 
@@ -120,13 +133,17 @@ class FLIP_DIRECTION(enum.IntEnum):
     TOP_BOTTOM = 1  #  ///< Flip top to bottom (around the X axis)
 
 
-def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbnew.BOARD:
+def flip_module(
+    ref_des: str, board: pcbnew.BOARD, side: SideEnum = SideEnum.top
+) -> pcbnew.BOARD:
     """
     Move and rotate a part on a board
     :param str ref_def: Reference Designator of part
     :param pcbnew.BOARD board: Target board
     :param bool side: front, back, current
     """
+    print(side, type(side))
+    assert isinstance(side, SideEnum)
     module = board.FindFootprintByReference(ref_des)
     if module is None:
         _log.warning("%s not found", ref_des)
@@ -140,10 +157,10 @@ def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbne
 
     # Set the correct side of the part, reflected over the y axis, correct the rotation later
     _log.debug("Side: %s", side)
-    if (side == "front" and module.GetLayerName() != "F.Cu") or (
-        side == "back" and module.GetLayerName() == "F.Cu"
+    if (side == SideEnum.top and module.GetLayerName() != "F.Cu") or (
+        side == SideEnum.bottom and module.GetLayerName() == "F.Cu"
     ):
-        _log.debug("Flip")
+        _log.debug(f"Flip {ref_des}")
         kwargs = {"aFlipLeftRight": True}
         if pcbnew.Version()[0] == "9":
             kwargs = {"aFlipDirection": int(FLIP_DIRECTION.TOP_BOTTOM)}
@@ -278,7 +295,7 @@ def _place_part(
 def place_parts(
     board: pcbnew.BOARD,
     components_df,
-    origin: tuple[float, float] = (0, 0),
+    origin: Tuple[float, float] = (0, 0),
 ) -> pcbnew.BOARD:
     """
     :param: pcbnew.BOARD board:
@@ -294,6 +311,7 @@ def place_parts(
     # Short circuit exit if there are no components
     # this allows an improperly formated dataframe to be entered if it's empty
     if len(components_df) == 0:
+        _log.warning("No parts in dataframe")
         return board
 
     for _, component in components_df.iterrows():
