@@ -24,13 +24,14 @@ _PSEUDONYMS_INVERT = {
 
 _REQUIRED_COLUMNS = {"x", "y", "refdes"}
 
+
 def translate_header(header):
     """
     Translate the header to a standardized form.
     If the tag cannot be found then just return it unchanged
     """
 
-    header_dict = {col.lower().replace(" ", "") : col for col in header}
+    header_dict = {col.lower().replace(" ", ""): col for col in header}
     return tuple([_PSEUDONYMS_INVERT.get(key, header_dict[key]) for key in header_dict])
 
 
@@ -71,11 +72,13 @@ def check_line_valid(line):
     """
     Must have all fields populated
     """
-    return (isinstance(line["rotation"], (float, int)) and
-            isinstance(line["x"], (float, int)) and
-            isinstance(line["y"], (float, int)) and
-            line["side"] in ("front", "back", "current") and
-            isinstance(line["refdes"], str))
+    return (
+        isinstance(line["rotation"], (float, int))
+        and isinstance(line["x"], (float, int))
+        and isinstance(line["y"], (float, int))
+        and line["side"] in ("front", "back", "current")
+        and isinstance(line["refdes"], str)
+    )
 
 
 def check_input_valid(components_df):
@@ -94,7 +97,7 @@ def check_input_valid(components_df):
         if not check_line_valid(line):
             errors.append(f"{i}: Error {line}")
 
-    return len(errors)==0, errors
+    return len(errors) == 0, errors
 
 
 def get_missing_references(board: pcbnew.BOARD, components_df):
@@ -107,6 +110,14 @@ def get_missing_references(board: pcbnew.BOARD, components_df):
         if module is None:
             missing_modules.append(ref_des)
     return missing_modules
+
+
+import enum
+
+
+class FLIP_DIRECTION(enum.IntEnum):
+    LEFT_RIGHT = 0  # , ///< Flip left to right (around the Y axis)
+    TOP_BOTTOM = 1  #  ///< Flip top to bottom (around the X axis)
 
 
 def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbnew.BOARD:
@@ -133,7 +144,11 @@ def flip_module(ref_des: str, board: pcbnew.BOARD, side: str = "front") -> pcbne
         side == "back" and module.GetLayerName() == "F.Cu"
     ):
         _log.debug("Flip")
-        module.Flip(module.GetCenter(), aFlipLeftRight=True)
+        kwargs = {"aFlipLeftRight": True}
+        if pcbnew.Version()[0] == "9":
+            kwargs = {"aFlipDirection": int(FLIP_DIRECTION.TOP_BOTTOM)}
+
+        module.Flip(module.GetCenter(), **kwargs)
 
     return board
 
@@ -179,9 +194,7 @@ def move_module(
     return board
 
 
-def center_component_location_on_bounding_box(
-    components, bounding_box
-):
+def center_component_location_on_bounding_box(components, bounding_box):
     """
     Takes a bounding box and a set of components. Components
     so they fit in the xy center of the box
@@ -202,7 +215,9 @@ def center_component_location_on_bounding_box(
         get_offset(components["y"], (bounding_box.GetBottom(), bounding_box.GetTop())),
     )
 
-    components["x"] = [pt + bounding_box.GetRight() - offset[0] for pt in components["x"]]
+    components["x"] = [
+        pt + bounding_box.GetRight() - offset[0] for pt in components["x"]
+    ]
     components["y"] = [pt + bounding_box.GetTop() + offset[1] for pt in components["y"]]
     return components
 
@@ -234,6 +249,32 @@ def group_parts(
     return board
 
 
+from typing import Any
+
+
+def _place_part(
+    board: pcbnew.BOARD, component: dict[str, Any], origin: tuple[float, float] = (0, 0)
+):
+    location = (component["x"], component["y"])
+    #  Scale input to kicad native units
+    x_mm = pcbnew.FromMM(float(location[0]) + origin[0])
+
+    # cartesian -> pixel
+    y_mm = pcbnew.FromMM(-1 * float(location[1]) + origin[1])
+    ref_des = component["refdes"]
+
+    if x_mm < 0 or y_mm < 0:
+        raise ValueError(
+            f"Placement of REF {ref_des} outside of legal range. Origin: {origin}, location: {location} -> ({x_mm}, {y_mm})"
+        )
+    assert x_mm >= 0
+    assert y_mm >= 0
+    flip_module(ref_des, side=component["side"], board=board)
+    move_module(ref_des, (x_mm, y_mm), component["rotation"], board=board)
+
+    return board
+
+
 def place_parts(
     board: pcbnew.BOARD,
     components_df,
@@ -255,22 +296,8 @@ def place_parts(
     if len(components_df) == 0:
         return board
 
-    #  Scale input to kicad native units
-    components_df["x"] = [
-        pcbnew.FromMM(float(pt + origin[0])) for pt in (components_df["x"])
-    ]
-    components_df["y"] = [
-        pcbnew.FromMM(float(-1*pt + origin[1])) for pt in (components_df["y"])
-    ]  # cartesian -> pixel
-
     for _, component in components_df.iterrows():
-        ref_des = component["refdes"]
-        flip_module(ref_des, side=component["side"], board=board)
-
-    for _, component in components_df.iterrows():
-        ref_des = component["refdes"]
-        position = (component["x"], component["y"])
-        move_module(ref_des, position, component["rotation"], board)
+        _place_part(board=board, component=component, origin=origin)
 
     return board
 
@@ -285,6 +312,6 @@ def mirror_parts(
     """
 
     components_df = copy.deepcopy(components_df)
-    components_df["x"] = [-1*pt for pt in components_df["x"]]
+    components_df["x"] = [-1 * pt for pt in components_df["x"]]
     place_parts(board, components_df, origin)
     return board
