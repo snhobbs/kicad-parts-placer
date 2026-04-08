@@ -1,8 +1,10 @@
 """Tests for `kicad_parts_placer` package."""
 
-import unittest
-from kicad_parts_placer import file_io
 import tempfile
+import unittest
+
+from kicad_parts_placer import file_io
+
 
 class TestFileIO(unittest.TestCase):
     def test_read_csv_to_df_comma(self):

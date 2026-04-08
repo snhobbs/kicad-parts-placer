@@ -2,11 +2,24 @@
 kicad_parts_placer: Place parts programatically
 """
 
-import logging
 import copy
-from typing import Union, Tuple
-import pcbnew
-from enum import Enum
+import logging
+from enum import Enum, IntEnum
+from typing import Any
+from dataclasses import dataclass
+
+_log = logging.getLogger(__name__)
+
+BoardType: type = object
+KICAD_FOUND = False
+try:
+    import pcbnew
+
+    BoardType: type = pcbnew.BOARD
+
+    KICAD_FOUND = True
+except ImportError:
+    _log.warning("KiCAD Not Available")
 
 
 class SideEnum(Enum):
@@ -14,8 +27,6 @@ class SideEnum(Enum):
     bottom = "BOTTOM"
     current = "CURRENT"
 
-
-_log = logging.getLogger("kicad_parts_placer")
 
 _HEADER_PSEUDONYMS = {
     "refdes": ["designator", "referencedesignator", "ref", "refdes"],
@@ -30,17 +41,38 @@ _PSEUDONYMS_INVERT = {
     alias: key for key, aliases in _HEADER_PSEUDONYMS.items() for alias in aliases
 }
 
-_REQUIRED_COLUMNS = {"x", "y", "refdes"}
+_SIDE_PSEUDONYMS = {
+    "front": SideEnum.top,
+    "top": SideEnum.top,
+    "f.cu": SideEnum.top,
+    "back": SideEnum.bottom,
+    "bottom": SideEnum.bottom,
+    "b.cu": SideEnum.bottom,
+}
+
+
+@dataclass
+class ComponentRow:
+    refdes: str
+    x: float
+    y: float
+    rotation: float
+    side: SideEnum
+
+    @classmethod
+    def from_series(cls, s) -> "ComponentRow":
+        return cls(
+            refdes=s["refdes"],
+            x=float(s["x"]),
+            y=float(s["y"]),
+            rotation=float(s["rotation"]),
+            side=s["side"],
+        )
 
 
 def translate_header(header):
-    """
-    Translate the header to a standardized form.
-    If the tag cannot be found then just return it unchanged
-    """
-
-    header_dict = {col.lower().replace(" ", ""): col for col in header}
-    return tuple([_PSEUDONYMS_INVERT.get(key, header_dict[key]) for key in header_dict])
+    header_dict = {col.lower().replace(" ", ""): col.strip() for col in header}
+    return tuple(_PSEUDONYMS_INVERT.get(key, val) for key, val in header_dict.items())
 
 
 def setup_dataframe(components_df):
@@ -62,87 +94,54 @@ def setup_dataframe(components_df):
     if "side" not in components_df.columns:
         components_df["side"] = [SideEnum.current] * len(components_df)
 
-    pseudonyms = {
-        SideEnum.top: ["front", "top", "f.cu"],
-        SideEnum.bottom: ["back", "bottom", "b.cu"],
-    }
-    reverse_pseudonyms = {}
-    for key, values in pseudonyms.items():
-        for value in values:
-            reverse_pseudonyms[value] = key
-
     sides = []
     for pt in components_df["side"]:
-        try:
-            sides.append(reverse_pseudonyms[pt.lower().strip()])
-        except KeyError:
-            sides.append(SideEnum.current)
+        if isinstance(pt, SideEnum):
+            sides.append(pt)
+        else:
+            resolved = _SIDE_PSEUDONYMS.get(pt.lower().strip())
+            sides.append(resolved if resolved is not None else pt)
     components_df["side"] = sides
     return components_df
 
 
-def check_line_valid(line):
-    """
-    Must have all fields populated
-    """
-    return (
-        isinstance(line["rotation"], (float, int))
-        and isinstance(line["x"], (float, int))
-        and isinstance(line["y"], (float, int))
-        and line["side"] in (SideEnum.bottom, SideEnum.current, SideEnum.top)
-        and isinstance(line["refdes"], str)
-    )
+def to_component_rows(components_df) -> list[ComponentRow]:
+    components_df = setup_dataframe(components_df)
+    return [ComponentRow.from_series(row) for _, row in components_df.iterrows()]
 
 
 def check_input_valid(components_df):
-    """
-    + Take input in a standard form
-    + Check all expected fields are there
-    + Check each line is correct
-    + Return success/fail and the errors
-    """
+    components_df = setup_dataframe(components_df)
     missing = set(_HEADER_PSEUDONYMS.keys()).difference(set(components_df.columns))
     if len(missing):
         return False, [f"Missing Field {pt}" for pt in missing]
 
     errors = []
     for i, line in components_df.iterrows():
-        if not check_line_valid(line):
-            errors.append(f"{i}: Error {line}")
+        row = ComponentRow.from_series(line)
+        if not isinstance(row.side, SideEnum):
+            errors.append(f"Row {i}: invalid side value {line['side']!r}")
+        if not row.refdes:
+            errors.append(f"Row {i}: empty refdes")
 
     return len(errors) == 0, errors
 
 
-def get_missing_references(board: pcbnew.BOARD, components_df):
-    """
-    return a list of missing modules
-    """
-    missing_modules = []
-    for ref_des in components_df["refdes"]:
-        module = board.FindFootprintByReference(ref_des)
-        if module is None:
-            missing_modules.append(ref_des)
-    return missing_modules
-
-
-import enum
-
-
-class FLIP_DIRECTION(enum.IntEnum):
+class FLIP_DIRECTION(IntEnum):
     LEFT_RIGHT = 0  # , ///< Flip left to right (around the Y axis)
     TOP_BOTTOM = 1  #  ///< Flip top to bottom (around the X axis)
 
 
 def flip_module(
-    ref_des: str, board: pcbnew.BOARD, side: SideEnum = SideEnum.top
-) -> pcbnew.BOARD:
+    ref_des: str, board: BoardType, side: SideEnum = SideEnum.top
+) -> BoardType:
     """
     Move and rotate a part on a board
     :param str ref_def: Reference Designator of part
     :param pcbnew.BOARD board: Target board
     :param bool side: front, back, current
     """
-    print(side, type(side))
+    _log.debug("flip_module called: side=%s type=%s", side, type(side))
     assert isinstance(side, SideEnum)
     module = board.FindFootprintByReference(ref_des)
     if module is None:
@@ -171,8 +170,8 @@ def flip_module(
 
 
 def move_module(
-    ref_des: str, position: tuple, rotation: float, board: pcbnew.BOARD
-) -> pcbnew.BOARD:
+    ref_des: str, position: tuple, rotation: float, board: BoardType
+) -> BoardType:
     """
     Move and rotate a part on a board
     :param str ref_def: Reference Designator of part
@@ -239,97 +238,68 @@ def center_component_location_on_bounding_box(components, bounding_box):
     return components
 
 
-def group_parts(
-    board: pcbnew.BOARD,
-    components_df,
-    group_name: Union[str, None] = None,
-) -> pcbnew.BOARD:
-    """
-    Put all parts in dataframe into a single group
-    """
-    if group_name is None:
-        group_name = ""  # FIXME name the groups by group_{{INT}}
-
-    if len(components_df) == 0:
-        return board
-
-    assert isinstance(group_name, str)
-    group = pcbnew.PCB_GROUP(None)
-    group.SetName(group_name)
-    board.Add(group)
-    for _, component in components_df.iterrows():
-        ref_des = component["refdes"]
-        module = board.FindFootprintByReference(ref_des)
-        if module is not None:
-            group.AddItem(module)
-
-    return board
-
-
-from typing import Any
-
-
 def _place_part(
-    board: pcbnew.BOARD, component: dict[str, Any], origin: tuple[float, float] = (0, 0)
+    board: BoardType, component: ComponentRow, origin: tuple[float, float] = (0, 0)
 ):
-    location = (component["x"], component["y"])
+    location = (component.x, component.y)
     #  Scale input to kicad native units
     x_mm = pcbnew.FromMM(float(location[0]) + origin[0])
 
     # cartesian -> pixel
     y_mm = pcbnew.FromMM(-1 * float(location[1]) + origin[1])
-    ref_des = component["refdes"]
+    ref_des = component.refdes
 
     if x_mm < 0 or y_mm < 0:
-        raise ValueError(
-            f"Placement of REF {ref_des} outside of legal range. Origin: {origin}, location: {location} -> ({x_mm}, {y_mm})"
-        )
-    assert x_mm >= 0
-    assert y_mm >= 0
-    flip_module(ref_des, side=component["side"], board=board)
-    move_module(ref_des, (x_mm, y_mm), component["rotation"], board=board)
+        msg = f"Placement of REF {ref_des} outside of legal range. Origin: {origin}, location: {location} -> ({x_mm}, {y_mm})"
+        raise ValueError(msg)
+    flip_module(ref_des, side=component.side, board=board)
+    move_module(ref_des, (x_mm, y_mm), component.rotation, board=board)
 
     return board
 
 
 def place_parts(
-    board: pcbnew.BOARD,
-    components_df,
-    origin: Tuple[float, float] = (0, 0),
-) -> pcbnew.BOARD:
-    """
-    :param: pcbnew.BOARD board:
-    :param: str group_name:
-    :param: bool mirror: reflect parts over y axis
-    :param: origin: reference point in mm
-
-    Done as if looking down on the top of the board.
-    Input can either be absolute or aux origin.
-    The input must be in cartesian coordinates.
-    Check that all the mapped output are within the positive natural coordinates.
-    """
-    # Short circuit exit if there are no components
-    # this allows an improperly formated dataframe to be entered if it's empty
-    if len(components_df) == 0:
-        _log.warning("No parts in dataframe")
+    board: BoardType,
+    components: list[ComponentRow],
+    origin: tuple[float, float] = (0, 0),
+) -> BoardType:
+    if not components:
+        _log.warning("No parts provided")
         return board
-
-    for _, component in components_df.iterrows():
+    for component in components:
         _place_part(board=board, component=component, origin=origin)
-
     return board
 
 
 def mirror_parts(
-    board: pcbnew.BOARD,
-    components_df,
+    board: BoardType,
+    components: list[ComponentRow],
     origin: tuple[float, float] = (0, 0),
-):
-    """
-    Mirror parts in an entire dataframe
-    """
+) -> BoardType:
+    mirrored = [replace(c, x=-c.x) for c in components]  # dataclasses.replace
+    return place_parts(board, mirrored, origin)
 
-    components_df = copy.deepcopy(components_df)
-    components_df["x"] = [-1 * pt for pt in components_df["x"]]
-    place_parts(board, components_df, origin)
+
+def get_missing_references(
+    board: BoardType, components: list[ComponentRow]
+) -> list[str]:
+    return [
+        c.refdes for c in components if board.FindFootprintByReference(c.refdes) is None
+    ]
+
+
+def group_parts(
+    board: BoardType,
+    components: list[ComponentRow],
+    group_name: str = "",
+) -> BoardType:
+    if not components:
+        return board
+    group = pcbnew.PCB_GROUP(None)
+    group.SetName(group_name)
+    board.Add(group)
+    for component in components:
+        module = board.FindFootprintByReference(component.refdes)
+        if module is not None:
+            group.AddItem(module)
     return board
