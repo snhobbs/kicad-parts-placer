@@ -5,8 +5,8 @@ kicad_parts_placer: Place parts programatically
 import copy
 import logging
 from enum import Enum, IntEnum
-from typing import Any
-from dataclasses import dataclass
+from typing import Any, TypeAlias
+from dataclasses import dataclass, replace
 
 _log = logging.getLogger(__name__)
 
