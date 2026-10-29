@@ -18,7 +18,7 @@ def read_csv_to_df(fname: str, **kwargs) -> pd.DataFrame:
     if "delimiter" in kwargs and "sep" not in kwargs:
         kwargs["sep"] = kwargs["delimiter"]
 
-    kwargs["delimiter"] = None
+    kwargs.pop("delimiter", None)  # pandas >= 3 rejects sep and delimiter together
     if "sep" in kwargs:
         return pd.read_csv(fname, **kwargs)
 
