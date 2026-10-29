@@ -343,6 +343,19 @@ class TestKicad_parts_placer(unittest.TestCase):
         missing = get_missing_references(board, components)
         self.assertEqual(missing, ["C1", "C2"])
 
+    def test_get_missing_references_accepts_dataframe(self):
+        """The dataframe form used by the cli and kicad-autogenerate."""
+        board = MagicMock()
+        board.FindFootprintByReference.side_effect = (
+            lambda ref: MagicMock() if ref == "C1" else None
+        )
+        components_df = setup_dataframe(
+            pd.DataFrame(
+                {"ref des": ["C1", "C2"], "x": [1, 3], "y": [2, 4], "side": ["top", "bottom"]}
+            )
+        )
+        self.assertEqual(get_missing_references(board, components_df), ["C2"])
+
     def test_get_missing_references_empty_components(self):
         board = MagicMock()
         missing = get_missing_references(board, [])

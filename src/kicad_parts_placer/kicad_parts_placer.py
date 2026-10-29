@@ -110,6 +110,13 @@ def to_component_rows(components_df) -> list[ComponentRow]:
     return [ComponentRow.from_series(row) for _, row in components_df.iterrows()]
 
 
+def _as_rows(components_df) -> list[ComponentRow]:
+    """The dataframe form (cli, kicad-autogenerate) or already built rows."""
+    if isinstance(components_df, list):
+        return components_df
+    return to_component_rows(components_df)
+
+
 def check_input_valid(components_df):
     components_df = setup_dataframe(components_df)
     missing = set(_HEADER_PSEUDONYMS.keys()).difference(set(components_df.columns))
@@ -260,9 +267,10 @@ def _place_part(
 
 def place_parts(
     board: BoardType,
-    components: list[ComponentRow],
+    components_df,
     origin: tuple[float, float] = (0, 0),
 ) -> BoardType:
+    components = _as_rows(components_df)
     if not components:
         _log.warning("No parts provided")
         return board
@@ -273,30 +281,31 @@ def place_parts(
 
 def mirror_parts(
     board: BoardType,
-    components: list[ComponentRow],
+    components_df,
     origin: tuple[float, float] = (0, 0),
 ) -> BoardType:
-    mirrored = [replace(c, x=-c.x) for c in components]  # dataclasses.replace
+    mirrored = [replace(c, x=-c.x) for c in _as_rows(components_df)]  # dataclasses.replace
     return place_parts(board, mirrored, origin)
 
 
-def get_missing_references(
-    board: BoardType, components: list[ComponentRow]
-) -> list[str]:
+def get_missing_references(board: BoardType, components_df) -> list[str]:
     return [
-        c.refdes for c in components if board.FindFootprintByReference(c.refdes) is None
+        c.refdes
+        for c in _as_rows(components_df)
+        if board.FindFootprintByReference(c.refdes) is None
     ]
 
 
 def group_parts(
     board: BoardType,
-    components: list[ComponentRow],
-    group_name: str = "",
+    components_df,
+    group_name: str | None = "",
 ) -> BoardType:
+    components = _as_rows(components_df)
     if not components:
         return board
     group = pcbnew.PCB_GROUP(None)
-    group.SetName(group_name)
+    group.SetName(group_name or "")
     board.Add(group)
     for component in components:
         module = board.FindFootprintByReference(component.refdes)
